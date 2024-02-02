@@ -1,0 +1,23 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/venv
+
+# production
+/web/static/**/*.js
+/web/static/**/*.html
+
+# PyCharm IDEA
+/.idea
+
+# misc
+*.pyc
+/logs
+/.convert
+/.files
+/.pytest_cache
+/htmlcov
+/__pychche__
+/pyrunner/src/priv/
+/pyrunner/build/src/
+/priv/

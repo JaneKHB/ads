@@ -1,0 +1,256 @@
+                                 RELEASE NOTES
+                                  CRAS Server
+
+These release notes are for the current development version of CRAS server application.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/12/08
+Version: 3.0.11
+*	New features
+    1)  Changed Cras judgment cycle and added Cras judgment SQL function
+    2)  ETC
+      - Add prefix_integer and prefix_float to the detailed column types of Rules.
+      - Modified Cras judgment data to be organized by equipment_id rather than tool_id.
+
+*	Bug Fixed
+    1)  Fixed an issue where the error_summary table in Cras DB Viewer could not be displayed.
+    3)  Modified so that tables not listed in Rules are also displayed when displaying table information of Cras Data Item.
+    4)  Modified the error_summary table so that it is also purged when the Purge Step is operated.
+    5)  Modified so that ! is not displayed even when a problem occurs in Regex Rules.
+    6)  Fixed an issue where attachment file compression could not be compressed if there was a space in the middle of the file compression password. (Cras Step, Error Summary Step)
+    7)  Fixed an issue where when deleting files in a folder after converting, all folders containing unconverted files are also deleted.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/09/26
+Version: 3.0.10
+*	Bug Fixed
+    1) Fixed an issue where cras slope function did not return.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/09/08
+Version: 3.0.9
+*	Bug Fixed
+    1) Fixed an issue where Error Summary report delivery failed when no password was provided
+
+--------------------------------------------------------------------------------------------
+Date: 2023/08/08
+Version: 3.0.8
+*	Bug Fixed
+    1) Fixed an issue where converting failed when apostrophe(') is included in the MPA's log file
+
+--------------------------------------------------------------------------------------------
+Date: 2023/08/03
+Version: 3.0.7
+*	Bug Fixed
+    There is no changes
+
+--------------------------------------------------------------------------------------------
+Date: 2023/07/27
+Version: 3.0.6
+*	Bug Fixed
+    1) Fixed the issue where Cras_Report_***.pdf displaying Cras evaluation results was corrupted
+    2) Fixed the issue with Header Rule not fetching logs when there is a change in the number of columns
+       while retrieving logs
+    3) Fixed the issue causing failure when processing duplicate chamber_detail_log entries
+    4) Fixed the issue where logs with the same date in multiple files were not being converted and inserted correctly
+    5) Fixed the issue with incorrect calculation of Mahalanobis distance
+
+--------------------------------------------------------------------------------------------
+Date: 2023/07/20
+Version: 3.0.5
+*	Bug Fixed
+    There is no changes
+
+--------------------------------------------------------------------------------------------
+Date: 2023/07/13
+Version: 3.0.4
+*	Bug Fixed
+    1) Fixed an issue where downloaded Error Log files remained in the storage
+
+--------------------------------------------------------------------------------------------
+Date: 2023/06/30
+Version: 3.0.3
+*	Bug Fixed
+    1) Prohibition of external access to internal server port.
+    2) After adding retention_period to each step, delete related files.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/06/22
+Version: 3.0.2
+*	Bug Fixed
+    1) Change the location of [cras_abnormal_data], [cras_input_data], [cras_item_master] DB Table from Log Monitor to Cras Server.
+    2) Add equipment_id to [cras_abnormal_data] table.
+    3) Skip saving the "user.start" file in the LogServerRoot FTP path.
+    4) Fixed an issue with mahalanobis step not running.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/06/15
+Version: 3.0.1
+*	Bug Fixed
+    1) Change flask server port number from 5000 to 8081.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/06/09
+Version: 3.0.0
+*	New features
+	1) Delete Docker-related phrases
+	2) Add log type
+	   - Arcnet Log
+	   - Cylinder Drive Count Log
+	   - Laser Interferometer Power Log
+	   - Liftbar Vacuum
+	   - Machine Data
+	   - Scan Initialize Log
+	3) Save Cras Data to DB
+	4) Modify Item name to Title in the body of the CRAS judgment abnormal report mail.
+	5) If there is no data collected during version_info conversion, the latest data is copied to today.
+
+*	Bug Fixed
+    1) Fixed a problem that CRAS judgment data could not be obtained when
+       the Rapid-Collector line name identical to the Log-Monitor fab name did not exist when CRAS judgment.
+    2) Modified not to create a new folder using mkdir if there is already a folder on the server during FTP transfer in the Collect Stage.
+    3) Fixed the part where the graph could not be drawn and an error occurred when the height value was nan at the time of CRAS judgment.
+
+--------------------------------------------------------------------------------------------
+Date: 2023/04/11
+Version: 2.6.2
+*	Bug Fixed
+    1) Fixed an issue that "error summary do not report" occur when "error summary"
+	
+--------------------------------------------------------------------------------------------
+Date: 2023/03/16
+Version: 2.6.1
+*	Bug Fixed
+    1) Fixed an issue that "convert except" occur when convert "status monitor"
+    2) Fixed an issue that "duplicate machine(ftp)" occur when send ftp
+
+--------------------------------------------------------------------------------------------
+Date: 2023/03/10
+Version: 2.6.0
+*	New features
+	1) Detect clickjacking attack
+	2) Change HTTP to HTTPS Protocol
+	3) Add incident log
+	4) Add function of file transfer protocol
+	5) Add log type(status monitor & mahalanobis)
+
+--------------------------------------------------------------------------------------------
+Date: 2022/12/21
+Version: 2.5.3
+*	Bug Fixed
+    1) Fixed an issue that "out of shared memory" occur when insert "duplicate data"
+    2) Fixed an issue that "custom except" occur when convert "custom lambda"
+
+--------------------------------------------------------------------------------------------
+Date: 2022/12/12
+Version: 2.5.2
+*	Bug Fixed
+    1) Fixed an issue that "convert error" occur when convert "included double sharp(header)"
+    2) Fixed an issue that "convert duplicate row" occur when convert
+
+--------------------------------------------------------------------------------------------
+Date: 2022/12/07
+Version: 2.5.1
+*	Bug Fixed
+    1) Fixed an issue that "convert error" occur when convert "many rule columns -> few data columns"
+    2) Fixed an issue that "preview error" occur when preview "not included sharp(header)"
+
+--------------------------------------------------------------------------------------------
+Date: 2022/12/02
+Version: 2.5.0
+*	New features
+	1) Import & Export Remote Job
+	2) Copy Remote Job
+	3) Rules
+     - Add function to copy cras rules
+	 - Add function to column define
+	 - Change function to parsing rules
+	4) Home
+	5) Add Manual Execute Remote Job
+	6) Error Log
+	 - Add/Edit/Delete Setting
+	 - Add Sort/Filter/Search
+	7) Default Setting
+	 - Default Email
+            
+--------------------------------------------------------------------------------------------
+Date: 2022/09/09
+Version: 2.4.0
+*	New features
+	1) Job History Download
+	2) Error Log
+     - Add user permissions for the settings feature, download history
+	3) Import & Export Address
+	4) Import & Export Account
+
+--------------------------------------------------------------------------------------------
+Date: 2022/06/10
+Version: 2.3.0
+*	New features
+	1) Job History
+	 - Real-time display of job history
+*	Bug Fixed
+    1) Change the failure condition of the Convert&Insert step
+
+--------------------------------------------------------------------------------------------
+Date: 2022/03/11
+Version: 2.2.0
+*	New features
+	1) Add log acquisition external API
+	2) Add Custom Step
+	3) Display Convert Rule Errors
+
+--------------------------------------------------------------------------------------------
+Date: 2022/01/18
+Version: 2.1.2
+*   Changes
+    1) Change a build system to Linux.
+
+--------------------------------------------------------------------------------------------
+Date: 2021/12/21
+Version: 2.1.1
+*   Changes
+    1) Fix bugs related to converting rule interface.
+
+--------------------------------------------------------------------------------------------
+Date: 2021/12/03
+Version: 2.1.0
+*   Changes
+    1) Every jobs run in a docker container which is called runner.
+	2) Support error log download feature.
+
+--------------------------------------------------------------------------------------------
+Date: 2021/09/14
+Version: 2.0.1
+*   Changes
+    1) Debug a method that checks Rapid-Collector server is available.
+
+--------------------------------------------------------------------------------------------
+Date: 2021/09/09
+Version: 2.0.0
+*	New features
+	1) Added editable converting rule interface.
+	2) Added editable cras judgement rule interface.
+	
+--------------------------------------------------------------------------------------------
+Date: 2021/07/09
+Version: 1.0.1
+*   Changes
+    1) Modify a release script from batch to bash.
+
+--------------------------------------------------------------------------------------------
+Date: 2021/06/11
+Version: 1.0.0
+*	New features
+	1) Converting Rapid-Collector logs and log files in local disk.
+	2) Create CRAS reports, error summary reports and version check reports.
+
+*	Web Application Environments
+	1) Flask in python : 1.1.2
+
+*	System Requirements
+	1) OS : CentOS 7.0
+	2) RDBMS : PostgreSQL 13
+	3) Python : 3.9.4
+
+--------------------------------------------------------------------------------------------

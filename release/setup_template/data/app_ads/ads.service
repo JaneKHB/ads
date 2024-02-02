@@ -1,0 +1,17 @@
+[Unit]
+Description=uWSGI instance to Cras-Server
+After=network.target
+
+[Service]
+#User=root
+#Group=root
+WorkingDirectory=/usr/local/crasapp/
+Environment="CRAS_SERVER=yes"
+Environment="CRAS_BASE_PATH=/CANON/CRAS"
+Environment="PYTHONPATH=/usr/local/crasapp/common:/usr/local/crasapp/dockerlib"
+ExecStart=python main.py
+RestartSec=30
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

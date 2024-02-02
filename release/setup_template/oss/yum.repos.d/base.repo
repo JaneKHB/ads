@@ -1,0 +1,11 @@
+[base]
+name=AlmaLinux-8.7-x86_64-dvd
+baseurl=file:///media/AppStream
+enabled=1
+gpgcheck=0
+
+[base1]
+name=AlmaLinux-8.7-x86_64-dvd-base
+baseurl=file:///media/BaseOS
+enabled=1
+gpgcheck=0

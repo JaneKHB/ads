@@ -1,0 +1,134 @@
+/CANON/DEVLOG/proxy_access.log {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/DEVLOG/proxy_error.log {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/DEVLOG/tomcat/catalina.rc.out {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/DEVLOG/tomcat/catalina.fsc.out {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/DEVLOG/tomcat/catalina.sm.out {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/CRAS/DEVLOG/proxy_access.log {
+	su root root
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/CRAS/DEVLOG/proxy_error.log {
+	su root root
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/CRAS/DEVLOG/cras_dev.log {
+	su root root
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/LOGMONITOR/DEVLOG/httpd/proxy_access.log {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/LOGMONITOR/DEVLOG/httpd/proxy_error.log {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
+
+/CANON/LOGMONITOR/DEVLOG/tomcat/catalina.logmonitor.out {
+	copytruncate
+	daily
+	rotate 7
+	compress
+	maxage 7
+	missingok
+	dateext
+	ifempty
+	create 0644 root root
+}
