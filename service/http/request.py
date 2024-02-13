@@ -14,7 +14,7 @@ def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep)
 
     # REM *** 定期収集ファイルダウンロード *****************************
     for _ in range(retry_max):
-        rtn = request_inner(url, fname, timeout, twofactor)
+        rtn = _request_inner(url, fname, timeout, twofactor)
         if rtn == D_SUCCESS:
             break
         else:
@@ -24,7 +24,7 @@ def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep)
     return rtn
 
 
-def request_inner(url, fname, timeout, twofactor):
+def _request_inner(url, fname, timeout, twofactor):
     """
     request共通処理 (旧RapidのためにHTTPSの場合はHTTPSでTry->SSLErrorだけHTTPでもう一回Tryする。
 
@@ -36,11 +36,13 @@ def request_inner(url, fname, timeout, twofactor):
         if len(twofactor):
             verify = twofactor["cacert"]
             cert = (twofactor["cert"], twofactor["key"])
-            response = requests.get(url, timeout=timeout, stream=True,
+            connect_read_timeout = (timeout, None)
+            response = requests.get(url, timeout=connect_read_timeout, stream=True,
                                     verify=verify,
                                     cert=cert)
         else:
-            response = requests.get(url, timeout=timeout, stream=True)
+            connect_read_timeout = (timeout, None)
+            response = requests.get(url, timeout=connect_read_timeout, stream=True)
     except Exception as e:
         print(str(e))
         return D_ERROR
