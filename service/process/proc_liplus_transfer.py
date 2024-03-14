@@ -13,7 +13,7 @@ from typing import Union
 from config.app_config import D_SHUTDOWN, D_PROC_START, D_PROC_ING, D_PROC_END, D_SUCCESS, D_REDIS_SHUTDOWN_KEY
 from service.logger.db_logger_service import DbLogger
 
-from service.process.liplus_process.file_transfer import LiplusFileTransfer
+from service.process.liplus_process.transfer.file_transfer import LiplusFileTransfer
 from service.redis.redis_service import get_redis_process_status, get_redis_global_status, set_redis_process_status
 
 

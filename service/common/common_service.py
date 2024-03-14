@@ -1,7 +1,9 @@
+import datetime
 import os
 import shutil
 
-from config.app_config import D_ERROR, D_SUCCESS
+import config.app_config as config
+import util.time_util as time_util
 
 
 def check_unknown(fname):
@@ -42,11 +44,11 @@ def xcopy_file_to_dir(logger, source_folder, destination_folder):
             logger.info(f"Files from '{source_folder}' copied to '{destination_folder}' successfully.")
         except FileNotFoundError:
             logger.warn(f"Folder  not found.")
-            return D_ERROR
+            return config.D_ERROR
         except Exception as e:
             logger.warn(f"Error copying files: {e}")
-            return D_ERROR
-    return D_SUCCESS
+            return config.D_ERROR
+    return config.D_SUCCESS
 
 
 def rmdir_func(logger, dir_path):
@@ -61,8 +63,55 @@ def rmdir_func(logger, dir_path):
             shutil.rmtree(dir_path)
         except FileNotFoundError:
             logger.warn(f"Folder not found.")
-            return D_ERROR
+            return config.D_ERROR
         except Exception as e:
             logger.warn(f"Error deleting folder: {e}")
-            return D_ERROR
-    return D_SUCCESS
+            return config.D_ERROR
+    return config.D_SUCCESS
+
+def file_size_logging(type, file, log_path):
+
+    if not os.path.exists(log_path):
+        with open(log_path, "w") as f:
+            f.write("up/down,filename,filesize(MB)\n")
+
+    if os.path.exists(file):
+        size_mb = os.stat(file).st_size / (1024 * 1024)
+        with open(log_path, "a") as f:
+            f.write(f"{type},{file},{size_mb}\n")
+
+def create_upfile_tmp(file, boundary):
+    file_tmp = os.path.abspath(file) + ".tmp"
+
+    if os.path.exists(file_tmp):
+        os.remove(file_tmp)
+
+    content_head = f'--{boundary}\n' \
+                   f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(file)}"\n' \
+                   f'Content-Type: multipart/form-data\n' \
+                   f'.\n'
+    content_tail = f'\n.\n' \
+                   f'--{boundary}--\n'
+    with open(file_tmp, "w") as f, open(file, 'r') as f_tmp:
+        f.write(content_head)
+        f.write(f_tmp.read())
+        f.write(content_tail)
+
+    return file_tmp
+
+def check_capacity(bat_name):
+    stat = shutil.disk_usage(config.CHECK_CAPA_DRIVE)
+    current_per = stat.free / stat.total * 100
+    log_path = os.path.join(config.CHECK_CAPA_CURRENT_DIR, "logs", "Disk_Limit.log")
+
+    if current_per < config.CHECK_CAPA_LIMIT_PERCENT:
+        input_data = f"{bat_name}\n" \
+                     f"{datetime.datetime.now().strftime(time_util.TIME_FORMAT_1)[:-4]}" \
+                     f"{config.CHECK_CAPA_DRIVE} の空き容量は {current_per} ％です\n" \
+                     f"空き容量がリミットを下回ったので処理を終了します\n"
+
+        with open(log_path, "a") as f:
+            f.write(input_data)
+        return False
+
+    return True

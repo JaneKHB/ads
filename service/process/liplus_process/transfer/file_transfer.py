@@ -16,7 +16,7 @@ from config.app_config import D_SUCCESS, D_ERROR, D_REDIS_SHUTDOWN_KEY, D_SHUTDO
 from service.common.common_service import remove_files_in_folder
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
-from service.process.liplus_process.file_get import LiplusFileGet
+from service.process.liplus_process.get.file_get import LiplusFileGet
 from service.redis.redis_service import get_redis_global_status
 from service.remote.remote_service import remote_check_path_by_sshkey, remote_scp_send_files
 

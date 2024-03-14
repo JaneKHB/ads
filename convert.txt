@@ -1,0 +1,23 @@
+# Liplus 온디맨드 기능용
+*** C:\ADS\CollectRequestFileUpload\LoopScript\Upload_Loop.bat (esp한테 파일 전송)
+	- \ADS\CollectRequestFileUpload\Auto_Upload.bat (collect_file_upload.py)
+	- \ADS\CollectRequestFileUpload\Upload_Tool.bat (collect_file_upload.py : _upload_tool)
+
+*** C:\ADS\OnDemandCollectDownload\LoopScript\Download_Loop.bat - proc_liplus_download.py
+    - \ADS\OnDemandCollectDownload\collectFileDownload.bat (liplus_process\download\collect_file_download.py)
+    - \ADS\OnDemandCollectDownload\LiplusGet_Tool.bat (collect_file_download.py : _liplusget_tool)
+
+# Liplus 다운로드 기능용
+C:\ADS\Liplus_LoopScript_Get\Liplus_Loop_Get_*.bat(장비 10대당 단축키 1개)
+C:\ADS\Liplus_LoopScript_Transfer\Liplus_Loop_Transfer_*.bat(장비 10대당 단축키 1개)
+
+# 업로드 기능 용 (EEC 용)
+*** C:\ADS\UploadBatch\LoopScript\Upload_Loop.bat (esp한테 파일 전송) - proc_fdt_upload.py
+    - \ADS\UploadBatch\Auto_Upload.bat (fdt_process\upload\file_upload.py)
+    - \ADS\UploadBatch\Upload_Tool.bat (file_upload.py : _upload_tool)
+
+# 다운로드 기능용(EEC용)：
+C:\ADS\LoopScript\Deploy_Loop.bat
+*** C:\ADS\LoopScript\Download_Loop.bat
+    - \ADS\fdt_batch\FileDownload.bat (fdt_process\download\file_download.py)
+    - \ADS\fdt_batch\script\FGet_Tool.bat (fdt_process\download\file_download.py : get_tool)

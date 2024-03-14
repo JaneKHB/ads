@@ -13,14 +13,15 @@ import subprocess
 import time
 from typing import Union
 
-from config.app_config import D_SUCCESS, config_ini, D_ERROR, FDT_CURRENT_DIR, FDT_FPA_TRACE_REG_FOLDER, SECURITYINFO_PATH, D_SHUTDOWN, D_UNKNOWN_ERROR_NO, D_REDIS_SHUTDOWN_KEY
+from config.app_config import D_SUCCESS, config_ini, D_ERROR, FDT_CURRENT_DIR, FDT_FPA_TRACE_REG_FOLDER, SECURITYINFO_PATH, D_SHUTDOWN, \
+    D_REDIS_SHUTDOWN_KEY
 from service.db.db_service import db_file_download_log
 from service.ini.ini_service import get_ini_value
 from service.common.common_service import check_unknown, remove_files_in_folder
 from service.logger.db_logger_service import DbLogger
-from service.process.fdt_process.file_download import FdtFileDownload
+from service.process.fdt_process.download.file_download import FdtFileDownload
 from service.redis.redis_service import get_redis_global_status
-from service.remote.remote_service import remote_ssh_command, remote_scp_send_files, remote_check_path_by_sshkey
+from service.remote.remote_service import remote_scp_send_files, remote_check_path_by_sshkey
 from service.http.request import esp_download
 from service.security.security_service import security_info
 
@@ -67,17 +68,17 @@ class FdtFpaTrace:
                 break
 
             # PKRFG11,1,10.47.146.63:8080,4,OTST401,10.53.193.13,C:\LOG\Download\PKRFG11,inazawa.wataru,CanonCanon,C:\backup,0
-            # 	rem	 1:%%i : 装置名
-            # 	rem	 2:%%j : 機種ID(1:6300 / 2:従来機)
-            # 	rem	 3:%%k : 接続先ESPアドレス
-            # 	rem	 4:%%l : ダウンロード上限数
-            # 	rem	 5:%%m : デプロイ先OTS名
-            # 	rem	 6:%%n : OTSのIPアドレス
-            # 	rem	 7:%%o : 正規フォルダパス
-            # 	rem	 8:%%p : ログインユーザID
-            # 	rem	 9:%%q : ログインユーザパスワード
-            # 	rem	10:%%r : バックアップフォルダパス（6300用）
-            # 	rem	11:%%s : Wait時間
+            # 	rem	 1:%%i : 装置名 장치명
+            # 	rem	 2:%%j : 機種ID(1:6300 / 2:従来機) 모델ID
+            # 	rem	 3:%%k : 接続先ESPアドレス 연결 대상 ESP 주소
+            # 	rem	 4:%%l : ダウンロード上限数 다운로드 상한
+            # 	rem	 5:%%m : デプロイ先OTS名 배포 대상 OTS 이름
+            # 	rem	 6:%%n : OTSのIPアドレス OTS IP주소
+            # 	rem	 7:%%o : 正規フォルダパス 정규 폴더 경로
+            # 	rem	 8:%%p : ログインユーザID 로그인 사용자 ID
+            # 	rem	 9:%%q : ログインユーザパスワード 비밀번호
+            # 	rem	10:%%r : バックアップフォルダパス（6300用）백업폴더 경로
+            # 	rem	11:%%s : Wait時間 wait time
             # 	call %CURRENT_DIR%script\fpatrace_DL_MV.bat C6_AUXCF_ %%i %%j %%k c:\ADS\var\fpatrace %%p %%q %FPATRACE_IP% %FPATRACE_DIR%
 
             if self.manual_upload == '0':
@@ -95,16 +96,18 @@ class FdtFpaTrace:
         :param userid:
         :param userpasswd:
         """
+
         self.toolid = toolid  # 装置名
         self.modelid = modelid
         self.espaddr = espaddr  # 接続先ESPアドレス
         self.userid = userid  # ユーザID
         self.userpasswd = userpasswd  # ユーザパスワード
 
-        protocol = "http"  # REM wget時のプロトコルを設定
+        protocol = "http"  # REM wget時のプロトコルを設定 REM wget시 프로토콜 설정
         time_second = int(get_ini_value(config_ini, "EEC", "EEC_ESP_HTTP_TIME_OUT"))  # REM wget時のタイムアウトまでの秒数を設定
         
         # rem 6300機種以外は終了
+        # 6300기종 이외는 종료
         if self.modelid != 1:
             return
 
@@ -112,6 +115,7 @@ class FdtFpaTrace:
         os.makedirs(self.reg_folder, exist_ok=True)
 
         # REM 2要素認証の利用有無を判別
+        # 2요소 인증의 이용 유무를 판별
         rtn, self.twofactor = security_info(self.logger, self.espaddr, self.securityinfo_path, self.securitykey_path)
         if rtn == D_SUCCESS and len(self.twofactor):
             protocol = "https"
@@ -120,6 +124,7 @@ class FdtFpaTrace:
             return
 
         # rem ファイルダウンロードパスを出力
+        # 파일 다운로드 경로 출력
         url = f"{protocol}://{self.espaddr}/FileServiceCollectionAgent/Download"
         parameter = f"USER={self.userid}&PW={self.userpasswd}&ID=CollectionPlan_{self.logtitle}{self.toolid}-01"
         base_url = url + "?" + parameter
@@ -132,20 +137,23 @@ class FdtFpaTrace:
         # REM ループはここに戻る
         for i in range(self.cntlmt):
             # REM ダウンロードファイル名が一意になるように決定
-            now = datetime.datetime.now()
-            datetimenow = now.strftime("%Y%m%d%H%M%S%f")[:-4]
+            # 다운로드 파일 이름이 고유하도록 결정
+            datetimenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
             fname = f"{self.current_dir}{self.toolid}-{datetimenow}.zip"
 
             # REM *** 定期収集ファイルダウンロード *****************************
+            # 정기 수집 파일 다운로드
             tick_download_start = time.time()
             rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
             # REM リトライしてもファイル取れなかったらログを残して次のコレクションプランに行く
+            # 다시 시도해도 파일을 얻을 수 없으면 로그를 남기고 다음 컬렉션 계획으로 이동하십시오.
             if rtn != D_SUCCESS:
                 self.logger.error(f"[adslog] ERROR errorcode:2000 msg:Failed to retry collecting {fname} from ESP..")
                 break
             tick_download_end = time.time() - tick_download_start
 
             # REM ファイルが最後かどうか確認する。Unknownが返ってきた場合はもう取るファイルは無い。
+            # 파일이 마지막인지 확인합니다. Unknown이 돌아왔을 경우는 더 이상 취할 파일은 없다.
             if check_unknown(fname):
                 self.logger.info("Unknownが返ってきた場合はループから抜ける")
                 break

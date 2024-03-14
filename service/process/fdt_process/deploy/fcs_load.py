@@ -8,16 +8,14 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import os
-import subprocess
 import time
 from typing import Union
 
-from config.app_config import D_SUCCESS, D_ERROR, FDT_CURRENT_DIR, FDT_FCS_HOME, FDT_MOVEINORDEROFOLDNESSPATH, FDT_ADS2_UPLOAD
-from service.common.common_service import rmdir_func
+from config.app_config import D_SUCCESS, D_ERROR, FDT_CURRENT_DIR, FDT_ADS2_UPLOAD
 from service.javaif.javaif_service import javaif_execute
 from service.logger.db_logger_service import DbLogger
-from service.process.fdt_process.file_download import FdtFileDownload
-from service.remote.remote_service import remote_check_path_by_sshkey, remote_check_folder
+from service.process.fdt_process.download.file_download import FdtFileDownload
+from service.remote.remote_service import remote_check_folder
 
 
 class FdtFcsLoad:
@@ -45,17 +43,17 @@ class FdtFcsLoad:
             # if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
             #     break
 
-            # 	rem	 1:%%i : 装置名
-            # 	rem	 2:%%j : 機種ID(1:6300 / 2:従来機)
-            # 	rem	 3:%%k : 接続先ESPアドレス
-            # 	rem	 4:%%l : ダウンロード上限数
-            # 	rem	 5:%%m : デプロイ先OTS名
-            # 	rem	 6:%%n : OTSのIPアドレス
-            # 	rem	 7:%%o : 正規フォルダパス
-            # 	rem	 8:%%p : ログインユーザID
-            # 	rem	 9:%%q : ログインユーザパスワード
-            # 	rem	10:%%r : バックアップフォルダパス（6300用）
-            # 	rem	11:%%s : Wait時間
+            # 	rem	 1:%%i : 装置名 장치명
+            # 	rem	 2:%%j : 機種ID(1:6300 / 2:従来機) 모델ID
+            # 	rem	 3:%%k : 接続先ESPアドレス 연결 대상 ESP 주소
+            # 	rem	 4:%%l : ダウンロード上限数 다운로드 상한
+            # 	rem	 5:%%m : デプロイ先OTS名 배포 대상 OTS 이름
+            # 	rem	 6:%%n : OTSのIPアドレス OTS IP주소
+            # 	rem	 7:%%o : 正規フォルダパス 정규 폴더 경로
+            # 	rem	 8:%%p : ログインユーザID 로그인 사용자 ID
+            # 	rem	 9:%%q : ログインユーザパスワード 비밀번호
+            # 	rem	10:%%r : バックアップフォルダパス（6300用）백업폴더 경로
+            # 	rem	11:%%s : Wait時間 wait time
             # call %CURRENT_DIR%script\FCSLoad_Tool.bat %%i %%j %%n %ADS2_UPLOAD%\%%i %%r %%s %CURRENT_DIR%
 
             self.fcs_load_tool(elem.get('toolid'), elem.get('modelid'), elem.get('otsipaddr'),
@@ -76,12 +74,14 @@ class FdtFcsLoad:
         self.eesp_var = f"{self.otsipaddr}/ees"     # todo
 
         # REM *** デプロイ先OTSフォルダの存在確認 *******************
+        # 배포 대상 OTS 폴더의 존재 확인
         rtn = remote_check_folder(self.logger, self.eesp_var)
         if rtn != D_SUCCESS:
             self.logger.error(9001, "OTS先が見つかりません！")
             return D_ERROR
 
         # REM *** 正規フォルダ内の0バイトファイル削除処理 *******************
+        # 정규 폴더 내의 0 바이트 파일 삭제 처리
         list_dir = os.listdir(self.reg_folder)
         for filename in list_dir:
             file = self.reg_folder + os.sep + filename
@@ -91,6 +91,7 @@ class FdtFcsLoad:
                     os.remove(file)
 
         # REM 正規フォルダ配下のファイル一覧表示
+        # 일반 폴더 아래의 파일 목록 표시
         list_dir = os.listdir(self.reg_folder)
         for filename in list_dir:
             self.logger.info(f"reg_folder file = {filename}")
