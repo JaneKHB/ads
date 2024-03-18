@@ -125,10 +125,10 @@ class CollectFileUpload:
                             f_rw.seek(0)
                             f_rw.write(''.join(line))
 
-                self._upload_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), f)
+                self._upload_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), os.path.join(self.upload_dir, f))
 
     # \ADS\CollectRequestFileUpload\Upload_Tool.bat
-    def _upload_tool(self, espaddr, userid, userpw, file):
+    def _upload_tool(self, espaddr, userid, userpw, file_path):
 
         result = 0
         log_transfer = os.path.join(self.current_dir, "file_transfer.log")
@@ -151,9 +151,9 @@ class CollectFileUpload:
         elif rtn != config.D_SUCCESS:
             return result
 
-        file_tmp = create_upfile_tmp(file, boundary)
+        file_tmp = create_upfile_tmp(file_path, boundary)
         header = f'--header="Content-Type: multipart/form-data; boundary={boundary}"'
-        postfile = f'--post-file="{file_tmp}"'
+        postfile = f'--post-file="{str(file_tmp.absolute())}"'
         url = f"{protocol}://{espaddr}/OnDemandAgent/Upload?USER={userid}&PW={userpw}"
 
         result_file_path = f"./result_{uuid.uuid4()}.tmp"
@@ -177,8 +177,8 @@ class CollectFileUpload:
             if res.returncode == 0:
                 # shlee todo \ADS\OnDemandCollectDownload\Upload_Tool.bat - 179
                 # ErroCode、UploadID 어떻게 가져오는걸까
-                file_size_logging("up", file, log_transfer)
-                os.remove(file_tmp)
+                file_size_logging("up", file_path, log_transfer)
+                file_tmp.unlink()
                 os.remove(result_file_path)
             else:
                 time.sleep(self.retry_sleep)

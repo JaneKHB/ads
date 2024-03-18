@@ -394,6 +394,12 @@ def setup_csv():
 
     # tempファイルを削除
     # temp 파일 삭제
+    temp_csv.unlink()
+    temp_xml.unlink()
+    shutil.rmtree(temp_properties_dir)
+
+    # オンデマンド/アップロード機能用フォルダ
+    # 온디맨드/업로드 기능용 폴더
 
 if __name__ == '__main__':
     setup_csv()

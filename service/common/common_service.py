@@ -71,22 +71,25 @@ def rmdir_func(logger, dir_path):
             return config.D_ERROR
     return config.D_SUCCESS
 
-def file_size_logging(type, file, log_path):
+def file_size_logging(type, file_path, log_path):
 
-    if not os.path.exists(log_path):
-        with open(log_path, "w") as f:
+    log = Path(log_path)
+    if not log.exists():
+        with open(log, "w") as f:
             f.write("up/down,filename,filesize(MB)\n")
 
-    if os.path.exists(file):
-        size_mb = os.stat(file).st_size / (1024 * 1024)
-        with open(log_path, "a") as f:
-            f.write(f"{type},{file},{size_mb}\n")
+    file_obj = Path(file_path)
+    if file_obj.exists():
+        size_mb = file_obj.stat().st_size / (1024 * 1024)
+        with open(log, "a") as f:
+            f.write(f"{type},{file_path},{size_mb}\n")
 
-def create_upfile_tmp(file, boundary):
-    file_tmp = os.path.abspath(file) + ".tmp"
+def create_upfile_tmp(file_path, boundary):
+    file = Path(file_path)
+    file_tmp = Path(str(file.absolute() + ".tmp"))
 
-    if os.path.exists(file_tmp):
-        os.remove(file_tmp)
+    if file_tmp.exists():
+        file_tmp.unlink()
 
     content_head = f'--{boundary}\n' \
                    f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(file)}"\n' \
@@ -94,7 +97,7 @@ def create_upfile_tmp(file, boundary):
                    f'.\n'
     content_tail = f'\n.\n' \
                    f'--{boundary}--\n'
-    with open(file_tmp, "w") as f, open(file, 'r') as f_tmp:
+    with open(file_tmp, "w") as f, open(file_path, 'r') as f_tmp:
         f.write(content_head)
         f.write(f_tmp.read())
         f.write(content_tail)

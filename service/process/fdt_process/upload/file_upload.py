@@ -91,21 +91,21 @@ class FdtFileUpload:
                 if os.path.splitext(f)[1].lower() != '.tmp':
                     # rem この%%Fが拡張子.tmp以外のアップロードファイルのフルパスになる
                     # 이 %% F가 .tmp 확장명이 아닌 업로드 파일의 전체 경로입니다.
-                    if self._upload_tool(f):
+                    if self._upload_tool(os.path.join(self.up_dir, self.toolid, self.categoryID, f)):
                         upfilebak_dir = os.path.join(self.current_dir, "UpFileBak", self.toolid, self.categoryID)
                         os.makedirs(upfilebak_dir, exist_ok=True)
-                        shutil.move(f, upfilebak_dir + os.path.basename(f))
+                        shutil.move(os.path.join(self.up_dir, self.toolid, self.categoryID, f), upfilebak_dir + os.path.basename(f))
                     else:
                         # shlee todo 로그!! 로그파일 생성!!
                         pass
 
     # \ADS\UploadBatch\Upload_Tool.bat
-    def _upload_tool(self, file):
+    def _upload_tool(self, file_path):
 
         result = 0
         # REM *** ファイルの存在確認 *******************************************************
         # 파일 존재 확인
-        if not os.path.exists(file):
+        if not os.path.exists(file_path):
             return result
 
         # 배치파일에선 공백으로 넘어옴
@@ -151,10 +151,10 @@ class FdtFileUpload:
 
         # REM *** wgetコマンドで送信するファイルにboundaryを設定する ***********************
         # wget 명령으로 전송할 파일에 boundary 설정
-        file_tmp = create_upfile_tmp(file, boundary)
+        file_tmp = create_upfile_tmp(file_path, boundary)
         rtn = req.esp_upload(self.logger, real_url, header, file_tmp, self.fname, time_second, self.twofactor
                              , self.retry_max, self.retry_sleep)
-        os.remove(file_tmp)
+        file_tmp.unlink()
 
         # shlee todo request.py line 55 중복
         '''
