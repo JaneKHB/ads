@@ -21,9 +21,12 @@ CHECK_CAPA_DRIVE = "/ADS/"
 CHECK_CAPA_CURRENT_DIR = "/ADS/Capacity_Check/"
 CHECK_CAPA_LIMIT_PERCENT = 5
 
+CSV_ORIGINAL_PATH = "/ADS/originalcsv"
+CSV_REAL_PATH = "/ADS/csv/"
+
 # FDT path
-FDT_TOOL_CSV = "/ADS/csv/ToolInfo.csv"
-FDT_UPTOOL_CSV = "/ADS/csv/UpToolInfo.csv"
+FDT_TOOL_CSV = CSV_REAL_PATH + "ToolInfo.csv"
+FDT_UPTOOL_CSV = CSV_REAL_PATH + "UpToolInfo.csv"
 FDT_CURRENT_DIR = "/ADS/fdt_batch/"
 
 FDT_ADS2_FOLDER = "/ADS/LOG/temp"

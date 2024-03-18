@@ -88,6 +88,7 @@ class CollectFileUpload:
             # rem XMLファイルを対象とする
             # XML 파일을 대상으로
             for f in os.listdir(self.ondemand_dir):
+                # get file extention
                 if os.path.splitext(f)[1].lower() == '.xml':
                     # rem ファイル移動
                     # 파일이동
