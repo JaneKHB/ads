@@ -4,44 +4,17 @@ import os
 import config.app_config as config
 import util.time_util as time_util
 
-class SettingMain:
+class Setting:
     """로거 세팅 클래스
         ::
             Setting.LEVEL = logging.INFO # INFO 이상만 로그를 작성
     """
-    LEVEL = logging.INFO
-    FILENAME = os.path.join(config.FILE_LOG_FILEPATH, config.FILE_LOG_FILENAME)
-    MAX_BYTES = config.FILE_LOG_MAXBYTE
-    BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
-    FORMAT = config.FILE_LOG_FORMAT
-
-class SettingLiplusDownload:
-    LEVEL = logging.INFO
-    FILENAME = os.path.join(config.FILE_LOG_FILEPATH, config.FILE_LOG_LIPLUS_FILEPATH, config.FILE_LOG_LIPLUS_DOWNLOAD_FILENAME)
-    MAX_BYTES = config.FILE_LOG_MAXBYTE
-    BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
-    FORMAT = config.FILE_LOG_FORMAT
-
-class SettingLiplusUpload:
-    LEVEL = logging.INFO
-    FILENAME = os.path.join(config.FILE_LOG_FILEPATH, config.FILE_LOG_LIPLUS_FILEPATH, config.FILE_LOG_LIPLUS_UPLOAD_FILENAME)
-    MAX_BYTES = config.FILE_LOG_MAXBYTE
-    BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
-    FORMAT = config.FILE_LOG_FORMAT
-
-class SettingLiplusGet:
-    LEVEL = logging.INFO
-    FILENAME = os.path.join(config.FILE_LOG_FILEPATH, config.FILE_LOG_LIPLUS_FILEPATH, config.FILE_LOG_LIPLUS_GET_FILENAME)
-    MAX_BYTES = config.FILE_LOG_MAXBYTE
-    BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
-    FORMAT = config.FILE_LOG_FORMAT
-
-class SettingLiplusTransfer:
-    LEVEL = logging.INFO
-    FILENAME = os.path.join(config.FILE_LOG_FILEPATH, config.FILE_LOG_LIPLUS_FILEPATH, config.FILE_LOG_LIPLUS_TRANSFER_FILENAME)
-    MAX_BYTES = config.FILE_LOG_MAXBYTE
-    BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
-    FORMAT = config.FILE_LOG_FORMAT
+    def __init__(self, log_path):
+        self.LEVEL = logging.INFO
+        self.FILENAME = log_path
+        self.MAX_BYTES = config.FILE_LOG_MAXBYTE
+        self.BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
+        self.FORMAT = config.FILE_LOG_FORMAT
 
 def Logger(name, setting):
     """파일 로그 클래스

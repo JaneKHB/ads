@@ -10,12 +10,15 @@
 import subprocess
 import time
 import signal
+
+import service.logger.logger_service as log
+
 from config.app_config import config_ini
 from service.ini.ini_service import get_ini_value
 
 exit_flag = False  # mainprocess Exit Flag
 subprocess_arr = []
-
+logger = log.Logger("MAIN", log.SettingMain(config_ini.FILE_LOG_MAIN_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}

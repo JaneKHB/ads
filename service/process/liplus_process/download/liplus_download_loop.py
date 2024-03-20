@@ -10,17 +10,18 @@
 
 import time
 import signal
+
+import service.logger.logger_service as log
+import config.app_config as config
+
 from typing import Union
 
-from config.app_config import D_SHUTDOWN, D_PROC_START, D_PROC_ING, D_PROC_END, D_SUCCESS, D_REDIS_SHUTDOWN_KEY
 from service.logger.db_logger_service import DbLogger
 from service.process.liplus_process.download.collect_file_download import CollectFileDownload
-from service.redis.redis_service import get_redis_process_status, get_redis_global_status, set_redis_process_status
-
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-
+logger = log.Logger("LILPUS_GET", log.SettingMain(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
