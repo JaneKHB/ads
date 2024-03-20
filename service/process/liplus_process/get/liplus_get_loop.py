@@ -27,15 +27,18 @@ def SignalHandler(signum, frame):
 
 
 def liplus_get_loop(pname, sname, pno: Union[int, None]):
-    logger = DbLogger(pname, sname, pno)
+    # logger = DbLogger(pname, sname, pno)
     while True:
         # check Exit Flag
         if exit_flag:
             break
 
         # Liplus_batch FileGet.bat
-        obj = LiplusFileGet(logger, pname, sname, pno)
+        # obj = LiplusFileGet(logger, pname, sname, pno)
+        obj = LiplusFileGet(None, pname, sname, pno)
         obj.start()
+
+        print("liplus get sleep")
 
         time.sleep(loop_interval)
 

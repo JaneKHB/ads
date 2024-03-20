@@ -17,12 +17,11 @@ from typing import Union
 import pandas as pd
 
 from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, D_SHUTDOWN, D_REDIS_SHUTDOWN_KEY, LIPLUS_CURRENT_DIR, LIPLUS_TOOL_CSV, LIPLUS_TOOL_INFO_HEADER_7, LIPLUS_TOOL_DATA_TYPE_7, LIPLUS_TOOL_INFO_HEADER, LIPLUS_TOOL_DATA_TYPE, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP
-from service.common.common_service import check_unknown, rmdir_func
+from service.common.common_service import check_unknown, rmdir_func, check_capacity
 from service.db.db_service import db_file_download_log
 from service.http.request import esp_download
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
-from service.redis.redis_service import get_redis_global_status
 from service.security.security_service import security_info
 
 
@@ -67,10 +66,15 @@ class LiplusFileGet:
         return tool_df
 
     def start(self):
+        # REM 空き容量チェック（対象ドライブと空き容量リミット％を設定）
+        # 여유 용량 체크(대상 드라이브와 여유 용량 리미트%를 설정)
+        if not check_capacity("LiplusGet"):
+            return
+
         for _, elem in self.tool_df.iterrows():
             # Mainが緊急終了状態
-            if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
-                break
+            # if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
+            #     break
 
             # 	rem	設定ファイル「LiplusTool.csv」から、
             # 	rem	一行ずつ読み込んで、必要項目を取得する
@@ -104,13 +108,22 @@ class LiplusFileGet:
         time_second = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
         
         # rem Liplusデータ取得先フォルダ
+        # Liplus 데이터 검색 대상 폴더
         if reg_folder == "":
             self.reg_folder = LIPLUS_REG_FOLDER_DEFAULT + os.sep + self.toolid
 
         fname = None
+
+        # rem Liplusデータ一時取得用フォルダ
+        # Liplus 데이터 임시 검색 폴더
         reg_folder_tmp = LIPLUS_REG_FOLDER_TMP + os.sep + f"{self.toolid}_Get"
 
-        # REM check folder
+        # Liplusデータ一時取得用フォルダ作成
+        # Liplus 데이터 임시 취득용 폴더 작성
+        os.makedirs(reg_folder_tmp, exist_ok=True)
+
+        # Liplusデータ取得先フォルダ作成
+        # Liplus 데이터 검색 대상 폴더 만들기
         os.makedirs(self.reg_folder, exist_ok=True)
 
         # REM 2要素認証の利用有無を判別
@@ -127,10 +140,10 @@ class LiplusFileGet:
         base_url = url + "?" + parameter
         next_url = url + "?" + parameter + "&NEXT=1"
 
-        self.logger.info(f"{self.toolid} liplus_get_tool start!!")
+        # self.logger.info(f"{self.toolid} liplus_get_tool start!!")
 
-        self.logger.info("base_url=" + base_url)
-        self.logger.info("next_url=" + next_url)
+        # self.logger.info("base_url=" + base_url)
+        # self.logger.info("next_url=" + next_url)
 
         # REM ループはここに戻る
         for i in range(self.cntlmt):
@@ -144,13 +157,15 @@ class LiplusFileGet:
             rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
             # REM リトライしてもファイル取れなかったらログを残して次のコレクションプランに行く
             if rtn != D_SUCCESS:
-                self.logger.error(2000, f"Failed to retry collecting {fname} from ESP..")
+                # self.logger.error(2000, f"Failed to retry collecting {fname} from ESP..")
+                print(f"Failed to retry collecting {fname} from ESP..")
                 break
             tick_download_end = time.time() - tick_download_start
 
             # REM ファイルが最後かどうか確認する。Unknownが返ってきた場合はもう取るファイルは無い。
             if check_unknown(fname):
-                self.logger.info("Unknownが返ってきた場合はループから抜ける")
+                # self.logger.info("Unknownが返ってきた場合はループから抜ける")
+                print("Unknownが返ってきた場合はループから抜ける")
                 break
 
             # REM ### ZIPファイルを解凍する ####
@@ -159,16 +174,19 @@ class LiplusFileGet:
             ret = subprocess.call(process_arg, shell=True)
             # rem ZIPの解凍が失敗の場合、ERRORLEVELが0以外となる
             if ret != 0:
-                self.logger.warn("zipファイルが0バイト、もしくはzipファイルが壊れているため終了します")
+                # self.logger.warn("zipファイルが0バイト、もしくはzipファイルが壊れているため終了します")
+                print("zipファイルが0バイト、もしくはzipファイルが壊れているため終了します")
                 break
             # REM　ZIPファイルの解凍処理時間をログに出力する
             tick_7zip_end = time.time() - tick_7zip_start
-            self.logger.info(f"Execution time: {tick_7zip_end:.6f} seconds")
+            # self.logger.info(f"Execution time: {tick_7zip_end:.6f} seconds")
+            print(f"Execution time: {tick_7zip_end:.6f} seconds")
 
             # REM ダウンロードしたファイルのサイズをログ出力する
             size_bytes = os.path.getsize(fname)
             db_file_download_log(self.pname, self.sname, self.pno, fname, size_bytes, tick_download_end)
-            self.logger.info(f"{fname} file size = {size_bytes} bytes")
+            # self.logger.info(f"{fname} file size = {size_bytes} bytes")
+            print(f"{fname} file size = {size_bytes} bytes")
 
             # REM *** 定期収集ファイルNEXT処理 ***********************************
             dummy_fname = f"{self.current_dir}dummy_{self.toolid}"
@@ -186,7 +204,8 @@ class LiplusFileGet:
             # call :execute dir /s "%REG_FOLDER_TMP%"
             list_dir = os.listdir(reg_folder_tmp)
             for filename in list_dir:
-                self.logger.info(f"reg_folder_tmp file = {filename}")
+                # self.logger.info(f"reg_folder_tmp file = {filename}")
+                print(f"reg_folder_tmp file = {filename}")
 
             # REM *** Liplusデータ一時取得用フォルダ削除 ********
             # call :execute rmdir /s /q "%REG_FOLDER_TMP%"
@@ -197,9 +216,11 @@ class LiplusFileGet:
         # REM 正規フォルダ配下のファイル一覧表示
         list_dir = os.listdir(reg_folder_tmp)
         for filename in list_dir:
-            self.logger.info(f"reg_folder_tmp file = {filename}")
+            # self.logger.info(f"reg_folder_tmp file = {filename}")
+            print(f"reg_folder_tmp file = {filename}")
 
         # REM *** Liplusデータ一時取得用フォルダ削除 ********
         rmdir_func(self.logger, reg_folder_tmp)
 
-        self.logger.info(f"{self.toolid} liplus_get_tool Finished")
+        # self.logger.info(f"{self.toolid} liplus_get_tool Finished")
+        print(f"{self.toolid} liplus_get_tool Finished")

@@ -14,7 +14,7 @@ ADS_DB_SCHEMA = {**ADS_DB, 'schema': ADS_DB_SCHEMA_NAME}
 # -------------------Path-----------------------
 # ----------------------------------------------
 # Program固定Path
-config_ini = "./config/config.ini"
+config_ini = "/ADS/appsrc/config/config.ini"
 devlog_dir = "/ADS/devlog"
 
 CHECK_CAPA_DRIVE = "/ADS/"
