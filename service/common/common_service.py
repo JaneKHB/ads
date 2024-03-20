@@ -1,6 +1,7 @@
 import datetime
 import os
 import shutil
+import stat
 
 import config.app_config as config
 import util.time_util as time_util
@@ -25,6 +26,14 @@ def check_unknown(fname):
             return 0
     return 0
 
+def on_rm_error( func, path, exc_info):
+    # path contains the path of the file that couldn't be removed
+    # let's just assume that it's read-only and unlink it.
+    os.chmod(path, stat.S_IWRITE)
+    os.unlink(path)
+
+def rmtree(path):
+    shutil.rmtree(path, onerror=on_rm_error)
 
 def remove_files_in_folder(folder):
     list_dir = os.listdir(folder)
@@ -42,7 +51,8 @@ def xcopy_file_to_dir(logger, source_folder, destination_folder):
                 for file in files:
                     source_file_path = os.path.join(root, file)
                     destination_file_path = os.path.join(destination_folder, file)
-                    shutil.copy2(source_file_path, destination_file_path)
+                    if not os.path.exists(destination_file_path):
+                        shutil.copy2(source_file_path, destination_file_path)
             logger.info(f"Files from '{source_folder}' copied to '{destination_folder}' successfully.")
         except FileNotFoundError:
             logger.warn(f"Folder  not found.")
@@ -78,9 +88,9 @@ def file_size_logging(type, file_path, log_path):
         with open(log, "w") as f:
             f.write("up/down,filename,filesize(MB)\n")
 
-    file_obj = Path(file_path)
-    if file_obj.exists():
-        size_mb = file_obj.stat().st_size / (1024 * 1024)
+    file = Path(file_path)
+    if file.exists():
+        size_mb = file.stat().st_size / (1024 * 1024)
         with open(log, "a") as f:
             f.write(f"{type},{file_path},{size_mb}\n")
 
@@ -97,7 +107,7 @@ def create_upfile_tmp(file_path, boundary):
                    f'.\n'
     content_tail = f'\n.\n' \
                    f'--{boundary}--\n'
-    with open(file_tmp, "w") as f, open(file_path, 'r') as f_tmp:
+    with open(file_tmp.absolute(), "w") as f, open(file_path.absolute(), 'r') as f_tmp:
         f.write(content_head)
         f.write(f_tmp.read())
         f.write(content_tail)
