@@ -10,15 +10,17 @@
 
 import time
 import signal
-from typing import Union
 
-from config.app_config import D_SHUTDOWN, D_PROC_START, D_PROC_ING, D_PROC_END, D_SUCCESS, D_REDIS_SHUTDOWN_KEY
+import service.logger.logger_service as log
+import config.app_config as config
+
+from typing import Union
 from service.logger.db_logger_service import DbLogger
-from service.redis.redis_service import get_redis_process_status, get_redis_global_status, set_redis_process_status
 from service.process.liplus_process.upload.collect_file_upload import CollectFileUpload
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
+logger = log.Logger("LIPLUS_UP", log.SettingMain(config.FILE_LOG_MAIN_PATH))
 
 
 def SignalHandler(signum, frame):
