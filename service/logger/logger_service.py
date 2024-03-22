@@ -29,7 +29,7 @@ def Logger(name, setting):
     # 로거 & 포매터 & 핸들러 생성
     logger = logging.getLogger(name)
     formatter = logging.Formatter(setting.FORMAT)
-    formatter.default_msec_format = time_util.TIME_FORMAT_1
+    formatter.default_msec_format = '%s.%03d'
     # streamHandler = logging.StreamHandler()
     ### when param ###
     # second - s

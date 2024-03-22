@@ -19,8 +19,7 @@ def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep)
         if rtn == D_SUCCESS:
             break
         else:
-            # logger.warn(f"Failed to retry collecting {fname} from ESP.")
-            print(f"Failed to retry collecting {fname} from ESP.")
+            logger.warn(f"Failed to retry collecting {fname} from ESP.")
             time.sleep(retry_sleep)
 
     return rtn
