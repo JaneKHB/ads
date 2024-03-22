@@ -14,12 +14,11 @@ import service.logger.logger_service as log
 import config.app_config as config
 
 from typing import Union
-from service.logger.db_logger_service import DbLogger
 from service.process.liplus_process.get.file_get import LiplusFileGet
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.Logger("LILPUS_GET", log.SettingMain(config.FILE_LOG_LIPLUS_GET_PATH))
+logger = log.Logger("LIPLUS_GET", log.Setting(config.FILE_LOG_LIPLUS_GET_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -30,7 +29,6 @@ def SignalHandler(signum, frame):
 
 
 def liplus_get_loop(pname, sname, pno: Union[int, None]):
-    logger = DbLogger(pname, sname, pno)
     while True:
         # check Exit Flag
         if exit_flag:
@@ -40,7 +38,8 @@ def liplus_get_loop(pname, sname, pno: Union[int, None]):
         obj = LiplusFileGet(logger, pname, sname, pno)
         obj.start()
 
-        time.sleep(loop_interval)
+        # time.sleep(loop_interval)
+        break
 
 
 if __name__ == '__main__':

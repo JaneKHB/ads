@@ -5,7 +5,7 @@ from config.app_config import ADS_DB, ADS_DB_SCHEMA_NAME
 
 
 def db_file_download_log(pname, sname, pno, fname, fsize, tick_time_sub):
-    print(f"ESP File={pname}:{sname}:{pno} {fname}. size={fsize} ")
+    # print(f"ESP File={pname}:{sname}:{pno} {fname}. size={fsize} ")
     pass
 
 def init_db():
