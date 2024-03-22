@@ -20,9 +20,9 @@ def dellink(current_dir):
         for line in read_line:
             txt = Path(line)
             if txt.exists():
-                txt.unlink()
+                txt.unlink(missing_ok=True)
 
-        file.unlink()
+        file.unlink(missing_ok=True)
 
 def mklink(link_path, link_name, work_dir):
     # shlee 시발 바로가기 어케만듬;;
@@ -143,7 +143,7 @@ def copy_csv(original_csv_path, base_dir):
             # 이름이 바뀐 폴더에 빈 CSV 파일 생성
             new_csv_path = Path(copy_to_dir, new_dir_name, setting_csv_name)
             if new_csv_path.exists():
-                new_csv_path.unlink()
+                new_csv_path.unlink(missing_ok=True)
             with open(new_csv_path, "a") as new_csv:
                 # 空のcsvファイルにヘッダーを出力
                 # 빈 CSV 파일에 헤더 출력
@@ -231,7 +231,7 @@ def convCRLFtoLF(target_file):
         for tmp_line in line:
             f.write(f"{tmp_line}\n")
 
-    target.unlink()
+    target.unlink(missing_ok=True)
     write_xml.rename(target.absolute())
 
 def fdt_toolinfo_gen(tool_name, temp_xml_name):
@@ -281,7 +281,7 @@ def setup_csv():
     # ADS 설치 스크립트 목록을 저장하는 임시 파일
     script_temp = Path(current_dir, "FolderNameList.txt")
     if script_temp.exists():
-        script_temp.unlink()
+        script_temp.unlink(missing_ok=True)
 
     # REM 管理者として実行
     # 관리자로 실행
@@ -308,7 +308,7 @@ def setup_csv():
         for f in target_dir.iterdir():
             old_dir_name_path = Path(old_dir_name, f)
             if old_dir_name_path.exists():
-                old_dir_name_path.unlink()
+                old_dir_name_path.unlink(missing_ok=True)
             shutil.move(Path(target_dir.absolute(), f), old_dir_name_path)
             shutil.copytree(target_dir.absolute(), old_dir_name)
         com.rmtree(target_dir.absolute())
@@ -318,7 +318,7 @@ def setup_csv():
 
     # REM セットアップファイル名の入ったtxtを削除
     # 설치 파일 이름이 포함된 txt 삭제
-    script_temp.unlink()
+    script_temp.unlink(missing_ok=True)
 
     # REM 設定ファイルを参照しセットアップスクリプトの配置を行う
     # 구성 파일을 찾아 설치 스크립트 배치
@@ -405,7 +405,7 @@ def setup_csv():
             fw.write(hr.read())
             fw.write(tr.read())
             fw.write(fr.read())
-        temp_properties_file.unlink()
+        temp_properties_file.unlink(missing_ok=True)
 
     # Propertieファイルをfdt_batchへ移動する
     # Properties 파일을 fdt_batch로 이동
@@ -413,8 +413,8 @@ def setup_csv():
 
     # tempファイルを削除
     # temp 파일 삭제
-    temp_csv.unlink()
-    temp_xml.unlink()
+    temp_csv.unlink(missing_ok=True)
+    temp_xml.unlink(missing_ok=True)
     com.rmtree(temp_properties_dir.absolute())
 
     # オンデマンド/アップロード機能用フォルダ

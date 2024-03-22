@@ -3,11 +3,12 @@ import os
 import shutil
 import stat
 
+import pandas as pd
 import config.app_config as config
 import util.time_util as time_util
 
 from pathlib import Path
-
+from service.ini.ini_service import get_ini_value
 
 def check_unknown(fname):
     """
@@ -92,14 +93,14 @@ def file_size_logging(type, file_path, log_path):
     if file.exists():
         size_mb = file.stat().st_size / (1024 * 1024)
         with open(log, "a") as f:
-            f.write(f"{type},{file_path},{size_mb}\n")
+            f.write(f"{type},{file.absolute()},{size_mb}\n")
 
 def create_upfile_tmp(file_path, boundary):
     file = Path(file_path)
-    file_tmp = Path(str(file.absolute() + ".tmp"))
+    file_tmp = Path(file.absolute() + ".tmp")
 
     if file_tmp.exists():
-        file_tmp.unlink()
+        file_tmp.unlink(missing_ok=True)
 
     content_head = f'--{boundary}\n' \
                    f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(file)}"\n' \
@@ -130,3 +131,32 @@ def check_capacity(bat_name):
         return False
 
     return True
+
+def get_csv_info(module, type):
+    file_path = None
+    ini_section = None
+    ini_key = None
+    read_names = None
+    read_dttype = None
+
+    if module == "LIPLUS":
+        if type == "UPLOAD":
+            file_path = config.LIPLUS_UPLOAD_INFO_CSV
+            ini_section = module
+            ini_key = "LIPLUS_UPLOAD_INFO_SKIP_LINE"
+            read_names = config.LIPLUS_UPLOAD_INFO_HEADER
+            read_dttype = config.LIPLUS_UPLOAD_DATA_TYPE
+        elif type == "DOWNLOAD":
+            file_path = config.LIPLUS_DOWNLOAD_INFO_CSV
+            ini_section = module
+            ini_key = "LIPLUS_DOWNLOAD_INFO_SKIP_LINE"
+            read_names = config.LIPLUS_DOWNLOAD_INFO_HEADER
+            read_dttype = config.LIPLUS_DOWNLOAD_DATA_TYPE
+    elif module == "FDT":
+        pass
+
+    skiprows = int(get_ini_value(config.config_ini, ini_section, ini_key))
+    tool_df = pd.read_csv(file_path, names=read_names, dtype=read_dttype,
+                          encoding='shift_jis',
+                          skiprows=skiprows, sep=',', index_col=False)
+    return tool_df
