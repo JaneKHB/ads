@@ -19,11 +19,12 @@ import pandas as pd
 from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
     LIPLUS_CURRENT_DIR, LIPLUS_TOOL_CSV, LIPLUS_TOOL_INFO_HEADER_7, LIPLUS_TOOL_DATA_TYPE_7, LIPLUS_TOOL_INFO_HEADER, \
     LIPLUS_TOOL_DATA_TYPE, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH
-from service.common.common_service import check_unknown, rmdir_func, check_capacity
-from service.db.db_service import db_file_download_log
+from service.capa.capa_service import check_capacity
+from service.common.common_service import check_unknown, rmdir_func
 from service.http.request import esp_download
 from service.ini.ini_service import get_ini_value
 from service.security.security_service import security_info
+from service.sevenzip.sevenzip_service import unzip
 
 
 class LiplusFileGet:
@@ -77,10 +78,6 @@ class LiplusFileGet:
         start_time_collection_loop = time.time()
 
         for _, elem in self.tool_df.iterrows():
-            # Mainが緊急終了状態
-            # if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
-            #     break
-
             # 	rem	設定ファイル「LiplusTool.csv」から、
             # 	rem	一行ずつ読み込んで、必要項目を取得する
             # 	rem	--------------------------------------------------------------
@@ -181,7 +178,9 @@ class LiplusFileGet:
             rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
 
             # If File Download fail after retrying, Loop End
-            if rtn != D_SUCCESS:
+            if rtn == D_SUCCESS:
+                self.logger.info("wget success. got zip file")
+            else:
                 self.logger.error(f"errorcode:2000 msg:Failed to retry collecting {fname} from ESP")
                 break
 
@@ -196,13 +195,8 @@ class LiplusFileGet:
 
             # Unzip Downloaded File
             tick_7zip_start = time.time()
-            process_arg = ['7z', 'x', '-aoa', f'-o{reg_folder_tmp}', fname]
-            self.logger.info(f"unzip command: {process_arg}")
-
-            unzip_subprocess = subprocess.Popen(process_arg, shell=True, stdout=subprocess.PIPE)
-            output = unzip_subprocess.communicate()[0]   # waiting process(unzip) to end
-            unzip_ret = unzip_subprocess.returncode
-            self.logger.info(output.decode())   # unzip logging
+            unzip_cmd = ['7z', 'x', '-aoa', f'-o{reg_folder_tmp}', fname]
+            unzip_ret = unzip(self.logger, unzip_cmd)
 
             # if unzip success, 0 returned.
             if unzip_ret != 0:
@@ -211,11 +205,10 @@ class LiplusFileGet:
 
             # Unzipping time
             tick_7zip_end = time.time() - tick_7zip_start
-            self.logger.info(f"unzipping time of a {fname}:{tick_7zip_end:.3f}[sec]")
+            self.logger.info(f"Unzipping time of a {fname}:{tick_7zip_end:.3f}[sec]")
 
             # Logging downloaded files
             size_bytes = os.path.getsize(fname)
-            db_file_download_log(self.pname, self.sname, self.pno, fname, size_bytes, tick_download_end)
             self.logger.info(f"{fname} file size = {size_bytes} bytes")
 
             # Call collection files next url
@@ -234,7 +227,7 @@ class LiplusFileGet:
             list_dir = os.listdir(reg_folder_tmp)
             self.logger.info(f"dir {reg_folder_tmp} : {list_dir}")
 
-            # khb. 삭제하는 코드가 잘못들어간건지 bat 확인해봐야함. 여러개의 파일을 다운로드 받아야하는데 폴더를 미리 삭제해버림!
+            # khb. fixme: 폴더를 삭제하는 코드가 ADS_1.2에 새로 추가. ADS_1.2 bat(LiplusGet_Tool.bat)에서도 여러개의 파일을 다운로드 받아야하는데 폴더를 미리 삭제해버리면서 에러 발생!
             # Remove reg_folder_tmp
             # self.logger.info(f"rmdir {reg_folder_tmp}")
             # rmdir_func(self.logger, reg_folder_tmp)

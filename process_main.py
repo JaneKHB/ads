@@ -7,18 +7,21 @@
 # ---------------------------------------------------------------------------
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
+import os
 import subprocess
 import time
 import signal
 
 import service.logger.logger_service as log
 
-from config.app_config import config_ini
+from config.app_config import config_ini, FILE_LOG_MAIN_PATH, FILE_LOG_LIPLUS_GET_PATH, FILE_LOG_LIPLUS_TRANSFER_PATH, \
+    FILE_LOG_LIPLUS_DOWNLOAD_PATH, FILE_LOG_LIPLUS_UPLOAD_PATH
 from service.ini.ini_service import get_ini_value
 
 exit_flag = False  # mainprocess Exit Flag
 subprocess_arr = []
-logger = log.Logger("MAIN", log.SettingMain(config_ini.FILE_LOG_MAIN_PATH))
+logger = log.Logger("MAIN", log.Setting(config_ini.FILE_LOG_MAIN_PATH))
+
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -62,8 +65,13 @@ def WaitSubProcess():
 
 
 def makedir():
-    # os.makedirs("D:/wget/1/2/3/4/5/6/7/8/9", exist_ok=True)
-    # make directory
+    # Make log directory
+    os.makedirs(os.path.dirname(FILE_LOG_MAIN_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(FILE_LOG_LIPLUS_GET_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(FILE_LOG_LIPLUS_TRANSFER_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(FILE_LOG_LIPLUS_DOWNLOAD_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(FILE_LOG_LIPLUS_UPLOAD_PATH), exist_ok=True)
+
     pass
 
 if __name__ == '__main__':
@@ -79,10 +87,11 @@ if __name__ == '__main__':
     RunSubProcess("./service/process/proc_fdt_download.py", get_ini_value(config_ini, "GLOBAL", "EEC_DOWNLOAD_ENABLE"))
     RunSubProcess("./service/process/proc_fdt_deploy.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
     RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_get.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_transfer.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_download.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_upload.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_COLLECTREQUESTFILEUPLOAD_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/get/liplus_get_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/transfer/liplus_transfer_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/download/liplus_download_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/upload/liplus_upload_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_COLLECTREQUESTFILEUPLOAD_ENABLE"))
 
     # check exit flag
     CheckExitFlag()
+

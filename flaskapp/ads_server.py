@@ -20,7 +20,6 @@ import logging
 import logging.handlers
 
 from controller.process_con.process_controller import ProcessNS
-from service.db.db_service import init_db
 from service.logger.file_logger_service import init_file_log
 
 
@@ -69,7 +68,7 @@ def create_app():
     api.add_namespace(ProcessNS, '/api/v1/process')
 
     # init db
-    init_db()
+    # init_db()
 
     @app.route('/', methods=['GET'])
     def main_page():
