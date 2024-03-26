@@ -51,6 +51,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, SignalHandler)
 
     logger_path = config.FILE_LOG_LIPLUS_GET_PATH.format(f"_{pno}")
-    logger = log.Logger("LIPLUS_TRANFER", log.Setting(logger_path))
+    logger = log.FileLogger("LIPLUS_TRANFER", log.Setting(logger_path))
 
     liplus_transfer_loop(logger, "LIPLUS", "TRANSFER", pno)

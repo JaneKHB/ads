@@ -16,7 +16,6 @@ import config.app_config as config
 
 from typing import Union
 
-from service.logger.db_logger_service import DbLogger
 from service.process.liplus_process.download.collect_file_download import CollectFileDownload
 
 exit_flag = False   # subprocess Exit Flag
