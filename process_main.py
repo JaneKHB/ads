@@ -36,7 +36,7 @@ def SignalHandler(signum, frame):
         exit_flag = True
 
 
-def RunSubProcess(script_path, enable_value, pno: Union[int, None]):
+def RunSubProcess(script_path, enable_value, pno: Union[int, None]=None):
     if enable_value == "1":
         if pno is None:
             process = subprocess.Popen(["python", script_path], stdin=None, stdout=None, stderr=None, close_fds=True)
