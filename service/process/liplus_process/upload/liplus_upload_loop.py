@@ -15,12 +15,11 @@ import service.logger.logger_service as log
 import config.app_config as config
 
 from typing import Union
-from service.logger.db_logger_service import DbLogger
 from service.process.liplus_process.upload.collect_file_upload import CollectFileUpload
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.Logger("LIPLUS_UP", log.SettingMain(config.FILE_LOG_MAIN_PATH))
+logger = log.FileLogger("LIPLUS_UP", log.Setting(config.FILE_LOG_MAIN_PATH))
 
 
 def SignalHandler(signum, frame):
@@ -33,9 +32,6 @@ def SignalHandler(signum, frame):
 
 # \ADS\CollectRequestFileUpload\LoopScript\Upload_Loop.bat
 def liplus_upload_loop(pname, sname, pno: Union[int, None]):
-    logger = DbLogger(pname, sname, pno)
-
-    logger = DbLogger(pname, sname, pno)
     while True:
         # check Exit Flag
         if exit_flag:

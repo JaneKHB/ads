@@ -1,13 +1,17 @@
 import datetime
-import os.path
+import os
 import shutil
+import inspect
 
-import service.common.common_service as com
 import config.app_config as config
 import util.time_util as time_util
+import service.logger.logger_service as log
 
-from service.common.common_service import xcopy_file_to_dir
 from pathlib import Path
+
+from service.common.common_service import rmtree
+
+logger = log.FileLogger("SETUP_CSV", log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
 def dellink(current_dir):
     file = Path(current_dir, "module", "linklist.txt")
@@ -20,14 +24,11 @@ def dellink(current_dir):
         for line in read_line:
             txt = Path(line)
             if txt.exists():
-                txt.unlink()
+                txt.unlink(missing_ok=True)
+                logger.info(f"delete [{txt.absolute()}]")
 
-        file.unlink()
-
-def mklink(link_path, link_name, work_dir):
-    # shlee 시발 바로가기 어케만듬;;
-    pass
-
+        file.unlink(missing_ok=True)
+        logger.info(f"delete [{file.absolute()}]")
 
 # /ADS/module/Csv_Copy.vbs
 def copy_csv(original_csv_path, base_dir):
@@ -79,16 +80,26 @@ def copy_csv(original_csv_path, base_dir):
         csv_type = -1
 
     copy_from_dir.mkdir(exist_ok=True)
+    logger.info(f"make dir [{copy_from_dir.absolute()}]")
 
     # 設定ファイルの存在しないScriptに関しては何もせずコピー
     # 설정 파일이 존재하지 않는 Script에 관해서는 아무것도하지 않고 복사
     if csv_type == -1:
         # CopyFSO.CopyFolder OriginalPath & "\Original_Setup_File" & "\AutoCC_Loop", CpToPath
         shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "AutoCC_Loop"), copy_to_dir)
+        logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'AutoCC_Loop')}] -> [{copy_to_dir}]")
+
         shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "Liplus_LOG"), copy_to_dir)
+        logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'Liplus_LOG')}] -> [{copy_to_dir}]")
+
         shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "LOG"), copy_to_dir)
+        logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'LOG')}] -> [{copy_to_dir}]")
+
         shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "LoopScript"), copy_to_dir)
+        logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'LoopScript')}] -> [{copy_to_dir}]")
+
         shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "Capacity_Check"), copy_to_dir)
+        logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'Capacity_Check')}] -> [{copy_to_dir}]")
 
     # コマンドライン引数で受け取ったcsvを開く
     # 명령줄 인수로 받은 CSV 열기
@@ -96,6 +107,7 @@ def copy_csv(original_csv_path, base_dir):
     read_csv = None
     with open(original_csv_path, "r") as csv:
         read_csv = csv.read().splitlines()
+    logger.info(f"read [{original_csv_path}]")
 
     # 装置台数10台毎に複製される設定ファイルの場合
     # 장치 대수 10대마다 복제되는 설정 파일의 경우
@@ -127,23 +139,26 @@ def copy_csv(original_csv_path, base_dir):
 
             # フォルダをコピー
             # 폴더 복사
-            shutil.copytree(copy_from_dir, copy_to_dir)
+            shutil.copytree(copy_from_dir.absolute(), copy_to_dir)
+            logger.info(f"copytree [{copy_from_dir.absolute()}] -> [{copy_to_dir}]")
 
             # フォルダをリネーム
             # 폴더 이름 바꾸기
-            # if os.path.exists(os.path.join(copy_to_dir, new_dir_name)):
             new_dir_path = Path(copy_to_dir, new_dir_name)
             dir_path = Path(copy_to_dir, dir_name)
             if new_dir_path.exists():
-                com.rmtree(dir_path.absolute())
+                rmtree(dir_path.absolute())
+                logger.info(f"rmtree [{dir_path.absolute()}]")
             else:
                 dir_path.rename(new_dir_path)
+                logger.info(f"rename [{dir_path.absolute()}] -> [{new_dir_path}]")
 
             # リネームしたフォルダに空のcsvファイルを生成
             # 이름이 바뀐 폴더에 빈 CSV 파일 생성
             new_csv_path = Path(copy_to_dir, new_dir_name, setting_csv_name)
             if new_csv_path.exists():
-                new_csv_path.unlink()
+                new_csv_path.unlink(missing_ok=True)
+                logger.info(f"delete [{new_csv_path.absolute()}]")
             with open(new_csv_path, "a") as new_csv:
                 # 空のcsvファイルにヘッダーを出力
                 # 빈 CSV 파일에 헤더 출력
@@ -153,6 +168,7 @@ def copy_csv(original_csv_path, base_dir):
                 # 헤더 아래에 장치 정보 출력
                 for ary_idx in range(array_len):
                     new_csv.write(csv_line[ary_idx])
+            logger.info(f"write [{new_csv_path.absolute()}]")
 
     # 装置台数に依存しない設定ファイルの場合
     # 장치 수에 의존하지 않는 구성 파일의 경우
@@ -169,6 +185,7 @@ def copy_csv(original_csv_path, base_dir):
         # フォルダをコピー
         # 폴더 복사
         shutil.copytree(copy_from_dir, copy_to_dir)
+        logger.info(f"copytree [{copy_from_dir.absolute()}] -> [{copy_to_dir}]")
 
         # 空のcsvファイルを生成
         # 빈 CSV 파일 생성
@@ -183,6 +200,7 @@ def copy_csv(original_csv_path, base_dir):
             if len(csv_line) > 0:
                 for i in range(len(csv_line)):
                     new_csv.write(csv_line[i])
+        logger.info(f"write [{new_csv_path.absolute()}]")
 
 
 def get_csv(original_csv_name, temp_csv_name):
@@ -193,7 +211,7 @@ def get_csv(original_csv_name, temp_csv_name):
     csv_header = []
     csv_line = []
     start_idx = 2
-    is_write_line = True
+    tool_name_list = []
 
     with open(original_csv_name, "r") as f:
         read_line = f.read().splitlines()
@@ -206,18 +224,24 @@ def get_csv(original_csv_name, temp_csv_name):
         csv_line.append(read_line[i])
 
     if len(csv_line) > 0:
-        # 실제 vbs파일에선 안에서 루프를 도는데...이상함;;루프 돌 필요 없을듯..
-        csv_split = csv_line[0].split(",")
-        tool_name = csv_split[0]
-        tool_id = csv_split[1]
+        for i in range(len(csv_line)):
+            is_write_line = True
+            csv_split = csv_line[i].split(",")
+            tool_name = csv_split[0]
+            tool_id = csv_split[1]
 
-        if tool_id != 1:
-            # 従来機の場合、同じ装置を重複して設定するのを防ぐ(Com/ErrとRTlogで同じ装置を登録しているため)
-            # 기존 기기의 경우 동일한 장치를 중복 설정하는 것을 방지(Com / Err과 RTlog에서 동일한 장치를 등록했기 때문에)
-            if tool_name == "":
-                is_write_line = False
-        with open(temp_csv_name, "w") as f:
-            f.write(f"{tool_name}\n")
+            if tool_id != 1:
+                # 従来機の場合、同じ装置を重複して設定するのを防ぐ(Com/ErrとRTlogで同じ装置を登録しているため)
+                # 기존 기기의 경우 동일한 장치를 중복 설정하는 것을 방지(Com / Err과 RTlog에서 동일한 장치를 등록했기 때문에)
+                for j in range(len(tool_name_list)):
+                    if tool_name == tool_name_list:
+                        is_write_line = False
+                        break
+                tool_name_list.append(tool_name)
+
+            if is_write_line:
+                with open(temp_csv_name, "a") as f:
+                    f.write(f"{tool_name}\n")
 
 def convCRLFtoLF(target_file):
     line = []
@@ -231,7 +255,7 @@ def convCRLFtoLF(target_file):
         for tmp_line in line:
             f.write(f"{tmp_line}\n")
 
-    target.unlink()
+    target.unlink(missing_ok=True)
     write_xml.rename(target.absolute())
 
 def fdt_toolinfo_gen(tool_name, temp_xml_name):
@@ -246,111 +270,29 @@ def fdt_properties_gen(tool_name, temp_txt_name):
     with open(temp_txt_name, "a", errors="ignore") as f:
         f.write(line)
 
-def liplus_mklink(type, tmp_dir_path, liplus_path):
-    shutil.copytree(tmp_dir_path, liplus_path)
-    com.rmtree(tmp_dir_path)
+# def liplus_mklink(type, tmp_dir_path, liplus_path):
+#     shutil.copytree(tmp_dir_path, liplus_path)
+#     rmtree(tmp_dir_path)
+#
+#     i = 1
+#     for f in os.listdir(liplus_path):
+#         file = Path(liplus_path, f)
+#         if file.suffix == ".bat":
+#             file_path = Path(liplus_path, f)
+#             mklink(file_path.absolute(), f"Liplus_Loop_{type}_{i}.lnk", liplus_path)
+#             i += 1
 
-    i = 1
-    for f in os.listdir(liplus_path):
-        file = Path(liplus_path, f)
-        if file.suffix == ".bat":
-            file_path = Path(liplus_path, f)
-            mklink(file_path.absolute(), f"Liplus_Loop_{type}_{i}.lnk", liplus_path)
-            i += 1
-
-# /ADS/Setup_CSV.bat
-def setup_csv():
-
-    # REM 各ディレクトリ定義
-    # 각 디렉토리 정의
-    current_dir = Path('/ADS/')
-    target_dir = Path('/ADS/')
-    original_csv = Path('/ADS/originalcsv')
-    original_setup_file_dir = Path(current_dir, "Original_Setup_File")
-    old_setup_file_dir = Path(current_dir, "Old_Setup_File")
-    # REM Old_Setup_Fileの中に作るフォルダの名前が一意になるようにする
-    # Old_Setup_File 안에 만들 폴더의 이름이 고유하게 만들기
-    old_dir_name = Path(old_setup_file_dir, f"Old_Setup_File-{datetime.datetime.now().strftime(time_util.TIME_FORMAT_4)}")
-
-    # REM ショートカットを削除
-    # 바로가기 삭제
-    if Path(current_dir, "module", "DelLink.bat").exists():
-        dellink(current_dir)
-
-    # REM ADSのセットアップスクリプトの一覧を格納する一時ファイル
-    # ADS 설치 스크립트 목록을 저장하는 임시 파일
-    script_temp = Path(current_dir, "FolderNameList.txt")
-    if script_temp.exists():
-        script_temp.unlink()
-
-    # REM 管理者として実行
-    # 관리자로 실행
-    # 필요한가...
-    # for /f "tokens=3 delims=\ " %%i in ('whoami /groups^|find "Mandatory"') do set LEVEL=%%i
-    # If NOT "%LEVEL%" == "High" (
-    # powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -Command "Start-Process %~f0 -Verb runas"
-    # exit
-    # )
-
-    # REM 古いセットアップファイルを保持しておくためのフォルダを生成する
-    # 이전 설치 파일을 보관할 폴더 생성
-    old_dir_name.mkdir(exist_ok=True)
-
-    # REM セットアップファイルの種類を取得する
-    # 설치 파일 형식 얻기
-    with open(script_temp, "a") as txt:
-        for f in original_setup_file_dir.iterdir():
-            txt.write(f"{f}\n")
-
-    # REM 既にフォルダが存在する場合はOLDへ移動
-    # 이미 폴더가 있으면 OLD로 이동
-    if target_dir.exists():
-        for f in target_dir.iterdir():
-            old_dir_name_path = Path(old_dir_name, f)
-            if old_dir_name_path.exists():
-                old_dir_name_path.unlink()
-            shutil.move(Path(target_dir.absolute(), f), old_dir_name_path)
-            shutil.copytree(target_dir.absolute(), old_dir_name)
-        com.rmtree(target_dir.absolute())
-    # REM ADSセットアップスクリプトを展開する専用のフォルダを作成
-    # ADS 설치 스크립트를 배포하는 전용 폴더 만들기
-    target_dir.mkdir(exist_ok=True)
-
-    # REM セットアップファイル名の入ったtxtを削除
-    # 설치 파일 이름이 포함된 txt 삭제
-    script_temp.unlink()
-
-    # REM 設定ファイルを参照しセットアップスクリプトの配置を行う
-    # 구성 파일을 찾아 설치 스크립트 배치
-    copy_csv(os.path.join(original_csv, "Liplus_batch_LiplusToolInfo.csv"), current_dir)
-    copy_csv(os.path.join(original_csv, "CollectRequestFileUpload_UploadInfo.csv"), current_dir)
-    copy_csv(os.path.join(original_csv, "OnDemandCollectDownload_DownloadInfo.csv"), current_dir)
-    copy_csv(os.path.join(original_csv, "fdt_batch_ToolInfo.csv"), current_dir)
-    copy_csv(os.path.join(original_csv, "UploadBatch_UpToolInfo.csv"), current_dir)
-    copy_csv("else_file", current_dir)
-
-    # 2要素認証用設定ファイルの配置を行う
-    # 2요소 인증용 설정 파일의 배치를 실시한다
-    securityinfo = Path(config.SECURITYINFO_PATH)
-    if securityinfo.exists():
-        shutil.copy(securityinfo, Path(target_dir, securityinfo.name))
-
-    # REM ############## Liplus Loop Batch ###################
-    # shlee todo mklink
-    mklink("", "", "")
-
-    # REM ####################################
-    # REM fdt_batch対応
-    # REM ####################################
-    # fdt_batch 대응
+def make_fdt():
     # REM fdt_batchのconfファイルを生成する
     # fdt_batch의 conf 파일 생성
     fdt_conf_dir = Path(config.CSV_REAL_PATH, "fdt_batch", "fcs", "conf")
     fdt_toolinfo_csv = Path(config.CSV_ORIGINAL_PATH, "fdt_batch_ToolINfo.csv")
-    temp_csv = Path(config.CSV_ORIGINAL_PATH, "module", "TempToolName.csv")
-    temp_xml = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "TempToolNameConf.xml")
-    header_conf = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "FCC_Header.xml")
-    footer_conf = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "FCC_Footer.xml")
+    temp_csv = Path(config.CSV_ORIGINAL_PATH, "TempToolName.csv")
+    temp_xml = Path(config.CSV_ORIGINAL_PATH, "fdt_conf_tmp", "TempToolNameConf.xml")
+    # header_conf = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "FCC_Header.xml")
+    # footer_conf = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "FCC_Footer.xml")
+    header_conf = Path(config.CSV_ORIGINAL_PATH, "FCC_Header.xml")
+    footer_conf = Path(config.CSV_ORIGINAL_PATH, "FCC_Footer.xml")
     conf_xml = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "tmp_conf", "FileCollectConfig.xml")
 
     get_csv(fdt_toolinfo_csv, temp_csv)
@@ -368,9 +310,9 @@ def setup_csv():
     # 複数ファイルを結合し1つのファイルにする
     # 여러 파일을 결합하여 하나의 파일로 만듭니다.
     with open(conf_xml, "w", errors="ignore") as conf, \
-        open(header_conf, "r", errors="ignore") as header, \
-        open(temp_xml, "r", errors="ignore") as tmp, \
-        open(footer_conf, "r", errors="ignore") as footer:
+            open(header_conf, "r", errors="ignore") as header, \
+            open(temp_xml, "r", errors="ignore") as tmp, \
+            open(footer_conf, "r", errors="ignore") as footer:
         conf.write(header.read())
         conf.write(tmp.read())
         conf.write(footer.read())
@@ -382,30 +324,33 @@ def setup_csv():
     # ConfXmlをftd_bacthへ移動する
     # ConfXml을 ftd_bacth로 이동
     fdt_conf_dir.mkdir(exist_ok=True)
-    shutil.move(conf_xml, Path(fdt_conf_dir, conf_xml.name))
+    try:
+        shutil.move(conf_xml, Path(fdt_conf_dir, conf_xml.name))
+    except Exception as e:
+        pass
 
     # fdt_batchのpropertieファイルを生成する
     # fdt_batch의 property 파일 생성
     temp_properties_dir = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp", "tmp_Properties")
     temp_properties_dir.mkdir(exist_ok=True)
     header_properties = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
-                                     "ToolName_Properties_Footer.txt")
+                             "ToolName_Properties_Footer.txt")
     footer_properties = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
-                                     "ToolName_Properties_Footer.txt")
+                             "ToolName_Properties_Footer.txt")
     for i in range(len(tool_name_list)):
         temp_properties_file = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
-                                     f"{tool_name_list[i]}_temp.txt")
+                                    f"{tool_name_list[i]}_temp.txt")
         fdt_properties_gen(tool_name_list[i], temp_properties_file)
 
         temp_txt_name = f"{temp_properties_dir}{tool_name_list[i]}.logcollect.logging.properties"
         with open(temp_txt_name, "a", errors="ignore") as fw, \
-            open(header_properties, "r", errors="ignore") as hr, \
-            open(temp_properties_file, "r", errors="ignore") as tr, \
-            open(footer_properties, "r", errors="ignore") as fr:
+                open(header_properties, "r", errors="ignore") as hr, \
+                open(temp_properties_file, "r", errors="ignore") as tr, \
+                open(footer_properties, "r", errors="ignore") as fr:
             fw.write(hr.read())
             fw.write(tr.read())
             fw.write(fr.read())
-        temp_properties_file.unlink()
+        temp_properties_file.unlink(missing_ok=True)
 
     # Propertieファイルをfdt_batchへ移動する
     # Properties 파일을 fdt_batch로 이동
@@ -413,27 +358,140 @@ def setup_csv():
 
     # tempファイルを削除
     # temp 파일 삭제
-    temp_csv.unlink()
-    temp_xml.unlink()
-    com.rmtree(temp_properties_dir.absolute())
+    temp_csv.unlink(missing_ok=True)
+    temp_xml.unlink(missing_ok=True)
+    rmtree(temp_properties_dir.absolute())
 
-    # オンデマンド/アップロード機能用フォルダ
-    # 온디맨드/업로드 기능용 폴더
-    liplus_loop_get_path = Path(target_dir, "Liplus_LoopScript_Get")
-    liplus_loop_transfer_path = Path(target_dir, "Liplus_LoopScript_Transfer")
-    liplus_loop_get_tmp_dir = Path(target_dir, "Liplus_LoopScript_Get")
-    liplus_loop_transfer_tmp_dir = Path(target_dir, "Liplus_LoopScript_Transfer")
+# def make_liplus_shortcut(current_dir, target_dir):
+#     # Liplus_Loop_Get/Transfer ショートカット設定
+#     # Liplus_Loop_Get/Transfer 바로 가기 설정
+#     # オンデマンド/アップロード機能用フォルダ
+#     # 온디맨드/업로드 기능용 폴더
+#     liplus_loop_get_path = Path(target_dir, "Liplus_LoopScript_Get")
+#     liplus_loop_transfer_path = Path(target_dir, "Liplus_LoopScript_Transfer")
+#     liplus_loop_get_tmp_dir = Path(target_dir, "Liplus_LoopScript_Get")
+#     liplus_loop_transfer_tmp_dir = Path(target_dir, "Liplus_LoopScript_Transfer")
+#
+#     # liplus_mklink("Get", liplus_loop_get_tmp_dir.absolute(), liplus_loop_get_path.absolute())
+#     # liplus_mklink("Transfer", liplus_loop_transfer_tmp_dir.absolute(), liplus_loop_transfer_path.absolute())
 
-    liplus_mklink("Get", liplus_loop_get_tmp_dir.absolute(), liplus_loop_get_path.absolute())
-    liplus_mklink("Transfer", liplus_loop_transfer_tmp_dir.absolute(), liplus_loop_transfer_path.absolute())
+
+# /ADS/Setup_CSV.bat
+def setup_csv():
+
+    # REM 各ディレクトリ定義
+    # 각 디렉토리 정의
+    current_dir = Path(config.CURRENT_PATH)
+    target_dir = Path(config.CURRENT_PATH)
+    original_csv = Path(config.CSV_ORIGINAL_PATH)
+    original_setup_file_dir = Path(current_dir, "Original_Setup_File")
+    old_setup_file_dir = Path(current_dir, "Old_Setup_File")
+    # REM Old_Setup_Fileの中に作るフォルダの名前が一意になるようにする
+    # Old_Setup_File 안에 만들 폴더의 이름이 고유하게 만들기
+    old_dir_name = Path(old_setup_file_dir, f"Old_Setup_File-{datetime.datetime.now().strftime(time_util.TIME_FORMAT_4)}")
+
+    # REM ショートカットを削除
+    # 바로가기 삭제
+    if Path(current_dir, "module", "DelLink.bat").exists():
+        dellink(current_dir)
+
+    # REM ADSのセットアップスクリプトの一覧を格納する一時ファイル
+    # ADS 설치 스크립트 목록을 저장하는 임시 파일
+    script_temp = Path(current_dir, "FolderNameList.txt")
+    if script_temp.exists():
+        script_temp.unlink(missing_ok=True)
+        logger.info(f"delete [{script_temp.absolute()}]")
+
+    # REM 管理者として実行
+    # 관리자로 실행
+    # 필요한가...
+    # for /f "tokens=3 delims=\ " %%i in ('whoami /groups^|find "Mandatory"') do set LEVEL=%%i
+    # If NOT "%LEVEL%" == "High" (
+    # powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -Command "Start-Process %~f0 -Verb runas"
+    # exit
+    # )
+
+    # REM 古いセットアップファイルを保持しておくためのフォルダを生成する
+    # 이전 설치 파일을 보관할 폴더 생성
+    old_dir_name.mkdir(exist_ok=True)
+    logger.info(f"make dir [{old_dir_name.absolute()}]")
+
+    # REM セットアップファイルの種類を取得する
+    # 설치 파일 형식 얻기
+    logger.info(f"write [{script_temp}]")
+    with open(script_temp, "a") as txt:
+        for f in original_setup_file_dir.iterdir():
+            txt.write(f"{f}\n")
+
+    # REM 既にフォルダが存在する場合はOLDへ移動
+    # 이미 폴더가 있으면 OLD로 이동
+    if target_dir.exists():
+        for f in target_dir.iterdir():
+            old_dir_name_path = Path(old_dir_name, f)
+            if old_dir_name_path.exists():
+                old_dir_name_path.unlink(missing_ok=True)
+                logger.info(f"delete [{old_dir_name_path.absolute()}]")
+            try:
+                shutil.move(Path(target_dir.absolute(), f), old_dir_name_path.absolute())
+                logger.info(f"move [{target_dir.absolute()}] -> [{old_dir_name_path.absolute()}]")
+                shutil.copytree(target_dir.absolute(), old_dir_name.absolute())
+                logger.info(f"copytree [{target_dir.absolute()}] -> [{old_dir_name.absolute()}]")
+            except Exception as e:
+                logger.error(e)
+
+        rmtree(target_dir.absolute())
+        logger.info(f"rmtree [{target_dir.absolute()}]")
+
+    # REM ADSセットアップスクリプトを展開する専用のフォルダを作成
+    # ADS 설치 스크립트를 배포하는 전용 폴더 만들기
+    target_dir.mkdir(exist_ok=True)
+    logger.info(f"make dir [{target_dir.absolute()}]")
+
+    # REM セットアップファイル名の入ったtxtを削除
+    # 설치 파일 이름이 포함된 txt 삭제
+    script_temp.unlink(missing_ok=True)
+    logger.info(f"delete [{script_temp.absolute()}]")
+
+    # REM 設定ファイルを参照しセットアップスクリプトの配置を行う
+    # 구성 파일을 찾아 설치 스크립트 배치
+    copy_csv(os.path.join(original_csv, "Liplus_batch_LiplusToolInfo.csv"), current_dir)
+    copy_csv(os.path.join(original_csv, "CollectRequestFileUpload_UploadInfo.csv"), current_dir)
+    copy_csv(os.path.join(original_csv, "OnDemandCollectDownload_DownloadInfo.csv"), current_dir)
+    copy_csv(os.path.join(original_csv, "fdt_batch_ToolInfo.csv"), current_dir)
+    copy_csv(os.path.join(original_csv, "UploadBatch_UpToolInfo.csv"), current_dir)
+    copy_csv("else_file", current_dir)
+
+    # 2要素認証用設定ファイルの配置を行う
+    # 2요소 인증용 설정 파일의 배치를 실시한다
+    securityinfo = Path(config.SECURITYINFO_PATH)
+    if securityinfo.exists():
+        shutil.copy(securityinfo, Path(target_dir, securityinfo.name))
+        logger.info(f"copy [{securityinfo.absolute()}] -> [{Path(target_dir, securityinfo.name).absolute()}]")
+
+    # 바로가기 만들필요 없을듯?
+    # mklink("", "", "")
+
+    # REM ####################################
+    # REM fdt_batch対応
+    # REM ####################################
+    # fdt_batch 대응
+    # shlee todo fdt안하니 주석! 나중에 풀어야함
+    # make_fdt()
+
+    # ############## Liplus Loop Batch 残り処理 ###################
+    # ############## Liplus Loop Batch 나머지 처리 ####################
+    # 바로가기 만들필요 없을듯?
+    # make_liplus_shortcut(current_dir, target_dir)
 
     fs_log = Path(current_dir, "FSLOG")
     ondemand = Path(current_dir, "ondemand")
 
-    if not fs_log.exists():
-        fs_log.mkdir()
-    if not ondemand.exists():
-        ondemand.mkdir()
+    fs_log.mkdir(exist_ok=True)
+    logger.info(f"make dir [{fs_log.absolute()}]")
+    ondemand.mkdir(exist_ok=True)
+    logger.info(f"make dir [{ondemand.absolute()}]")
 
 if __name__ == '__main__':
+    logger.info("--------------------START SETUP CSV--------------------")
     setup_csv()
+    logger.info("---------------------END SETUP CSV---------------------")

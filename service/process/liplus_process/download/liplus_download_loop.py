@@ -16,12 +16,11 @@ import config.app_config as config
 
 from typing import Union
 
-from service.logger.db_logger_service import DbLogger
 from service.process.liplus_process.download.collect_file_download import CollectFileDownload
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.Logger("LILPUS_GET", log.SettingMain(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
+logger = log.FileLogger("LIPLUS_DOWN", log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -33,7 +32,6 @@ def SignalHandler(signum, frame):
 
 # \ADS\OnDemandCollectDownload\LoopScript\Download_Loop.bat
 def liplus_download_loop(pname, sname, pno: Union[int, None]):
-    logger = DbLogger(pname, sname, pno)
     while True:
         # check Exit Flag
         if exit_flag:

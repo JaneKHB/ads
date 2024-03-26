@@ -8,6 +8,7 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import sys
+import time
 import signal
 
 import service.logger.logger_service as log
@@ -18,7 +19,6 @@ from service.process.liplus_process.get.file_get import LiplusFileGet
 
 exit_flag = False  # subprocess Exit Flag
 loop_interval = 5  # second
-
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -51,8 +51,8 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, SignalHandler)
     signal.signal(signal.SIGTERM, SignalHandler)
 
-    logger_path = config.FILE_LOG_LIPLUS_GET_PATH % pno
-    logger = log.Logger("LIPLUS_GET", log.Setting(logger_path))
+    logger_path = config.FILE_LOG_LIPLUS_GET_PATH.format(f"_{pno}")
+    logger = log.FileLogger("LIPLUS_GET", log.Setting(logger_path))
 
     liplus_get_loop(logger, "LIPLUS", "GET", pno)
 

@@ -154,7 +154,7 @@ class FdtFileUpload:
         file_tmp = create_upfile_tmp(file_path, boundary)
         rtn = req.esp_upload(self.logger, real_url, header, file_tmp, self.fname, time_second, self.twofactor
                              , self.retry_max, self.retry_sleep)
-        file_tmp.unlink()
+        file_tmp.unlink(missing_ok=True)
 
         # shlee todo request.py line 55 중복
         '''
