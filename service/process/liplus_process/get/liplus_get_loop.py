@@ -8,6 +8,7 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import sys
+import time
 import signal
 
 import service.logger.logger_service as log

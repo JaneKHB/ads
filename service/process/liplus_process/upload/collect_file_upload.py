@@ -82,11 +82,11 @@ class CollectFileUpload:
                     try:
                         shutil.move(f, os.path.join(self.upload_dir.absolute(), f.name))
                         self.logger.info(f"Move success: {f}")
-                    except:
+                    except Exception as e:
                         # rem 収集要求ファイルの移動に失敗しても収集要求ファイルは削除せず、次回アップロード時に再度移動を行う
                         # 수집 요청 파일을 이동하지 못해도 수집 요청 파일을 삭제하지 않고 다음에 업로드 할 때 다시 이동합니다.
                         self.logger.info(f"Move failure: {f}")
-                        pass
+                        self.logger.error(e)
 
             for f in self.upload_dir.iterdir():
                 # rem 収集要求ファイル内のFab名抽出
@@ -176,25 +176,28 @@ class CollectFileUpload:
         res = subprocess.run(command)
 
         for _ in range(self.retry_max):
-            if res.returncode == 0:
-                self.logger.info("wget upload command success.")
+            try:
+                if res.returncode == 0:
+                    self.logger.info("wget upload command success.")
 
-                self._response_check(result_file_path.absolute())
-                file_size_logging("up", ulfile.absolute(), log_transfer.absolute())
+                    self._response_check(result_file_path.absolute())
+                    file_size_logging(self.logger, "up", ulfile.absolute(), log_transfer.absolute())
 
-                self.logger.info(f"delete {file_tmp.absolute()}")
+                    self.logger.info(f"delete {file_tmp.absolute()}")
 
-                file_tmp.unlink(missing_ok=True)
-                result_file_path.unlink(missing_ok=True)
-            else:
-                self.logger.info("wget retry start")
-                self.logger.info(f"timeout {self.retry_sleep}")
+                    file_tmp.unlink(missing_ok=True)
+                    result_file_path.unlink(missing_ok=True)
+                else:
+                    self.logger.info("wget retry start")
+                    self.logger.info(f"timeout {self.retry_sleep}")
 
-                time.sleep(self.retry_sleep)
-                res = subprocess.run(command)
+                    time.sleep(self.retry_sleep)
+                    res = subprocess.run(command)
 
-                self.logger.info("WARNING msg:Executed retry of ondemand request to ESP.")
-                self.logger.info("wget retry end")
+                    self.logger.info("WARNING msg:Executed retry of ondemand request to ESP.")
+                    self.logger.info("wget retry end")
+            except Exception as e:
+                self.logger.error(e)
 
         # リトライ時のWgetコマンドの結果を解析する
         # 재시도시 Wget 명령의 결과 분석

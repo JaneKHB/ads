@@ -143,12 +143,14 @@ class CollectFileDownload:
                 break
 
             self.download_file.rename(collect_file_name)
+            self.logger.info(f"rename [{self.download_file.absolute()}] -> [{collect_file_name}]")
 
             if res.returncode == 0: # 성공
                 self.logger.info("wget File Download Request command success")
 
                 self._response_check(self.result_file.absolute())
                 self.result_file.unlink(missing_ok=True)
+                self.logger.info(f"delete [{self.result_file.absolute()}]")
                 self._upload_ok(url, collect_file_name)
                 break
             else:
@@ -233,7 +235,6 @@ class CollectFileDownload:
                         , f.absolute()
                     ]
                     self.logger.info(f"subprocess run {command_7z}")
-
                     subprocess.run(command_7z)
                     tick_unzip_end = time.time() - tick_unzip_start
 
@@ -286,7 +287,10 @@ class CollectFileDownload:
                         # REM *** ZIP 파일의 압축을 풀지 못하면 Backup 폴더로 ZIP 파일을 이동합니다.
                         self.logger.info(f"{f} :unzip failure")
                         self.logger.info(f"move {f} -> {self.zip_backup_folder}")
-                        shutil.move(os.path.join(self.reg_folder.absolute(), f), os.path.join(self.zip_backup_folder, f))
+                        try:
+                            shutil.move(os.path.join(self.reg_folder.absolute(), f), os.path.join(self.zip_backup_folder, f))
+                        except Exception as e:
+                            self.logger.error(e)
                         self.logger.info(f"rmdir {unzip_dir}")
                         rmtree(unzip_dir.absolute())
                 else:
@@ -298,7 +302,7 @@ class CollectFileDownload:
 
         # REM ダウンロードしたファイルのサイズをログ出力する
         # 다운로드한 파일의 크기를 로깅
-        file_size_logging("down", res_path, Path(self.current_dir, self.log_transfer).absolute())
+        file_size_logging(self.logger, "down", res_path, Path(self.current_dir, self.log_transfer).absolute())
 
         # REM *** 定期収集ファイルNEXT処理 ***********************************
         # *** 정기 수집 파일 NEXT 처리 ***********************************
@@ -319,6 +323,7 @@ class CollectFileDownload:
             , str(self.timeout_second)
             , self.twofactor
         ]
+        self.logger.info(f"subprocess run {command}")
         res = subprocess.run(command)
 
         # REM *** wgetコマンドの結果を解析し、エラーならNEXT処理をリトライ*********************************************
@@ -326,21 +331,31 @@ class CollectFileDownload:
         for _ in range(self.retry_max):
 
             if res.returncode == 0:
-                # shlee todo \ADS\OnDemandCollectDownload\LiplusGet_Tool.bat - 217
-                # ErroCode、UploadID 어떻게 가져오는걸까
+                self.logger.info("wget Next Request command success.")
+                self._response_check(result_path.absolute())
                 break
             else:
+                self.logger.info("wget retry start")
+                self.logger.info(f"timeout {self.retry_sleep}")
+                time.sleep(self.retry_sleep)
+
                 res = subprocess.run(command)
 
-        if res.returncode != 0:
-            # shlee 로그
-            pass
+                self.logger.info("WARNING msg:Executed retry of file deletion instruction to ESP.")
+                self.logger.info("wget retry end")
 
-        for _ in range(self.retry_max):
-            if result_path.exists():
-                result_path.unlink(missing_ok=True)
-            else:
-                break
+        # NEXT処理をリトライしてもエラーの場合、エラーログを出力
+        # NEXT 처리를 재 시도해도 오류가 발생하면 오류 로그 출력
+        if res.returncode != 0:
+            self.logger.info("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
+            # 失敗時のログ出力(ErroCode)
+            # 실패시 로그 출력 (ErroCode)
+            self._response_check(result_path.absolute(), is_error=True)
+
+        # 一時ファイルを削除する
+        # 임시 파일 삭제
+        result_path.unlink(missing_ok=True)
+        self.logger.info(f"delete[{result_path.absolute()}]")
 
     def _get_collect_file_name(self, rename_basepath):
 

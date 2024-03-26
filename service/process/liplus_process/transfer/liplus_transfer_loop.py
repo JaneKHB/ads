@@ -8,6 +8,7 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import sys
+import time
 import signal
 
 import service.logger.logger_service as log
@@ -16,9 +17,9 @@ import config.app_config as config
 from typing import Union
 from service.process.liplus_process.transfer.file_transfer import LiplusFileTransfer
 
-exit_flag = False  # subprocess Exit Flag
-loop_interval = 5  # second
-
+exit_flag = False   # subprocess Exit Flag
+loop_interval = 5   # second
+logger = log.FileLogger("LIPLUS_TR", log.Setting(config.FILE_LOG_LIPLUS_TRANSFER_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -38,8 +39,7 @@ def liplus_transfer_loop(logger, pname, sname, pno: Union[int, None]):
         obj = LiplusFileTransfer(logger, pname, sname, pno)
         obj.start()
 
-        # time.sleep(loop_interval)
-        break
+        time.sleep(loop_interval)
 
 
 if __name__ == '__main__':

@@ -14,7 +14,40 @@ class Setting:
         self.BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
         self.FORMAT = config.FILE_LOG_FORMAT
 
-def Logger(name, setting):
+def TimedLogger(name, setting, when="d", interval=1):
+    # 로거 & 포매터 & 핸들러 생성
+    logger = logging.getLogger(name)
+    formatter = logging.Formatter(setting.FORMAT)
+    formatter.default_msec_format = '%s.%03d'
+    # streamHandler = logging.StreamHandler()
+    ### when param ###
+    # second - s
+    # minute - m
+    # hour - h
+    # day - d
+    # weekday - w0-w6 (0=monday)
+    # midnight
+    rotatingHandler = logging.handlers.TimedRotatingFileHandler(
+        when=when,
+        interval=interval,
+        filename=setting.FILENAME,
+        backupCount=setting.BACKUP_COUNT)
+    rotatingHandler.suffix = config.FILE_LOG_DATEFMT
+
+    # 핸들러 & 포매터 결합
+    # streamHandler.setFormatter(formatter)
+    rotatingHandler.setFormatter(formatter)
+
+    # 로거 & 핸들러 결합
+    # logger.addHandler(streamHandler)
+    logger.addHandler(rotatingHandler)
+
+    # 로거 레벨 설정
+    logger.setLevel(setting.LEVEL)
+
+    return logger
+
+def FileLogger(name, setting):
     """파일 로그 클래스
         :param name: 로그 이름
         :type name: str
@@ -29,19 +62,9 @@ def Logger(name, setting):
     formatter = logging.Formatter(setting.FORMAT)
     formatter.default_msec_format = '%s.%03d'
     # streamHandler = logging.StreamHandler()
-    ### when param ###
-    # second - s
-    # minute - m
-    # hour - h
-    # day - d
-    # weekday - w0-w6 (0=monday)
-    # midnight
-    rotatingHandler = logging.handlers.TimedRotatingFileHandler(
-        when="d",
-        interval=1,
+    rotatingHandler = logging.handlers.RotatingFileHandler(
         filename=setting.FILENAME,
         backupCount=setting.BACKUP_COUNT)
-    rotatingHandler.suffix = config.FILE_LOG_DATEFMT
 
     # 핸들러 & 포매터 결합
     # streamHandler.setFormatter(formatter)

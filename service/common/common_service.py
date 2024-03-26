@@ -82,8 +82,9 @@ def rmdir_func(logger, dir_path):
             return config.D_ERROR
     return config.D_SUCCESS
 
-def file_size_logging(type, file_path, log_path):
+def file_size_logging(logger, type, file_path, log_path):
 
+    logger.info(f"file size logging file : [{file_path}], log : [{log_path}]")
     log = Path(log_path)
     if not log.exists():
         with open(log, "w") as f:
