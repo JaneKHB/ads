@@ -18,7 +18,7 @@ from service.ini.ini_service import get_ini_value
 
 exit_flag = False  # mainprocess Exit Flag
 subprocess_arr = []
-logger = log.Logger("MAIN", log.SettingMain(config_ini.FILE_LOG_MAIN_PATH))
+logger = log.FileLogger("MAIN", log.Setting(config_ini.FILE_LOG_MAIN_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -76,13 +76,13 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, SignalHandler)
 
     # run subprocess
-    RunSubProcess("./service/process/proc_fdt_download.py", get_ini_value(config_ini, "GLOBAL", "EEC_DOWNLOAD_ENABLE"))
-    RunSubProcess("./service/process/proc_fdt_deploy.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
-    RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_get.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_transfer.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_download.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_ENABLE"))
-    RunSubProcess("./service/process/proc_liplus_upload.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_COLLECTREQUESTFILEUPLOAD_ENABLE"))
+    # RunSubProcess("./service/process/proc_fdt_download.py", get_ini_value(config_ini, "GLOBAL", "EEC_DOWNLOAD_ENABLE"))
+    # RunSubProcess("./service/process/proc_fdt_deploy.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
+    # RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/get/liplus_get_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/transfer/liplus_transfer_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/download/liplus_download_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/upload/liplus_upload_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_COLLECTREQUESTFILEUPLOAD_ENABLE"))
 
     # check exit flag
     CheckExitFlag()

@@ -18,7 +18,7 @@ from service.process.liplus_process.get.file_get import LiplusFileGet
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.Logger("LIPLUS_GET", log.Setting(config.FILE_LOG_LIPLUS_GET_PATH))
+logger = log.FileLogger("LIPLUS_GET", log.Setting(config.FILE_LOG_LIPLUS_GET_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}

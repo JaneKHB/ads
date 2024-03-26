@@ -19,7 +19,7 @@ from service.process.liplus_process.transfer.file_transfer import LiplusFileTran
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.Logger("LIPLUS_TR", log.SettingMain(config.FILE_LOG_LIPLUS_TRANSFER_PATH))
+logger = log.FileLogger("LIPLUS_TR", log.Setting(config.FILE_LOG_LIPLUS_TRANSFER_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}

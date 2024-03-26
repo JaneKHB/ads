@@ -34,11 +34,11 @@ class FileLogger:
             logger.setLevel(logging.DEBUG)
 
             path = os.path.abspath(os.getcwd())
-            logpath = os.path.join(path, config.FILE_LOG_FILEPATH)
+            logpath = os.path.join(path, config.FILE_LOG_MAIN_PATH)
             if not os.path.exists(logpath):
                 os.mkdir(logpath)
 
-            filename = os.path.join(logpath, config.FILE_LOG_FILENAME)
+            filename = os.path.join(logpath, config.FILE_LOG_MAIN_PATH)
             dev_file_handler = logging.handlers.RotatingFileHandler(filename,
                                                                     maxBytes=config.FILE_LOG_MAXBYTE,
                                                                     backupCount=config.FILE_LOG_BACKUPCOUNT)
@@ -60,7 +60,7 @@ class FileLogger:
         self.listener_configurer(debug)
 
         path = os.path.abspath(os.getcwd())
-        logpath = os.path.join(path, config.FILE_LOG_FILEPATH)
+        logpath = os.path.join(path, config.FILE_LOG_MAIN_PATH)
 
         while True:
             try:
