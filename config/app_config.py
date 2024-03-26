@@ -115,10 +115,10 @@ PROCESS_SCRIPT = 'process_main.py'
 # Log System Settings
 FILE_LOG = 'APP_LOG'
 FILE_LOG_MAIN_PATH = '/ADS/devlog/ads_dev_log.log'
-FILE_LOG_LIPLUS_GET_PATH = '/ADS/devlog/Liplus/liplus_get.log'
-FILE_LOG_LIPLUS_TRANSFER_PATH = '/ADS/devlog/Liplus/liplus_transfer.log'
-FILE_LOG_LIPLUS_DOWNLOAD_PATH = '/ADS/devlog/Liplus/liplus_download.log'
-FILE_LOG_LIPLUS_UPLOAD_PATH = '/ADS/devlog/Liplus/liplus_upload.log'
+FILE_LOG_LIPLUS_GET_PATH = '/ADS/devlog/Liplus/get/%d/liplus_get.log'
+FILE_LOG_LIPLUS_TRANSFER_PATH = '/ADS/devlog/Liplus/transfer/%d/liplus_transfer.log'
+FILE_LOG_LIPLUS_DOWNLOAD_PATH = '/ADS/devlog/Liplus/download/liplus_download.log'
+FILE_LOG_LIPLUS_UPLOAD_PATH = '/ADS/devlog/Liplus/upload/liplus_upload.log'
 FILE_LOG_MAXBYTE = 10 * 1024 * 1024
 FILE_LOG_BACKUPCOUNT = 100
 FILE_LOG_FORMAT = '%(asctime)s [%(levelname)8s | %(name)6s, %(module)s(%(lineno)s)] --- %(message)s'

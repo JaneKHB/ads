@@ -12,17 +12,16 @@ import subprocess
 import time
 from typing import Union
 
-from config.app_config import D_SUCCESS, D_ERROR, D_REDIS_SHUTDOWN_KEY, D_SHUTDOWN, LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini
+from config.app_config import D_SUCCESS, D_ERROR, LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini
+from service.capa.capa_service import check_capacity
 from service.common.common_service import remove_files_in_folder
 from service.ini.ini_service import get_ini_value
-from service.logger.db_logger_service import DbLogger
 from service.process.liplus_process.get.file_get import LiplusFileGet
-from service.redis.redis_service import get_redis_global_status
 from service.remote.remote_service import remote_check_path_by_sshkey, remote_scp_send_files
 
 
 class LiplusFileTransfer:
-    def __init__(self, logger: DbLogger, pname, sname, pno: Union[int, None]):
+    def __init__(self, logger, pname, sname, pno: Union[int, None]):
         self.logger = logger
         self.pname = pname
         self.sname = sname
@@ -32,15 +31,18 @@ class LiplusFileTransfer:
         self.tool_df = LiplusFileGet.get_tool_info(self.pno)
         self.sshkey_path = get_ini_value(config_ini, "SECURITY", "SSHKEY_PATH")
 
-        self.toolid = None  # 装置名
-        self.reg_folder = None  # 正規フォルダパス d:\ADS\LOG\temp\装置名
+        self.toolid = None  # 装置名 (MachineName)
+        self.reg_folder = None  # 正規フォルダパス (* Liplus Data Download Folder)
 
     def start(self):
-        for _, elem in self.tool_df.iterrows():
-            # Mainが緊急終了状態
-            if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
-                break
+        # Capacity Check
+        if not check_capacity("LiplusTransfer"):
+            return
 
+        # Processing Start Time
+        start_time_collection_loop = time.time()
+
+        for _, elem in self.tool_df.iterrows():
             # 	rem	--------------------------------------------------------------
             # 	rem	設定ファイル「LiplusToolInfo.csv」から、
             # 	rem	一行ずつ読み込んで、必要項目を取得する
@@ -54,12 +56,10 @@ class LiplusFileTransfer:
 
             self.liplus_transfer_tool(elem.get('toolid'), elem.get('ldb_dir'), elem.get('reg_folder'))
 
-    def liplus_transfer_tool(self, toolid, ldb_dir, reg_folder):
-        """
-        ファイルダウンロードする子スクリプト
+        # Processing End Time
+        end_time_collection_loop = time.time()
 
-        :return: None
-        """
+    def liplus_transfer_tool(self, toolid, ldb_dir, reg_folder):
         self.toolid = toolid  # 装置名
         self.ldb_dir = ldb_dir
         self.reg_folder = reg_folder  # 正規フォルダパス d:\ADS\LOG\Upload\装置名
@@ -68,6 +68,9 @@ class LiplusFileTransfer:
         #     set REMOTE_LIPLUS_IP=%%I
         #     set REMOTE_LIPLUS_DIR=/liplus/%%K
         # )
+
+        print(ldb_dir)
+
         # todo
         remote_liplus_ip = "10.1.31.163"
         remote_liplus_dir = "/liplus/original_data/KIOXIA/3119008"

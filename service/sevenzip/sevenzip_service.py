@@ -14,7 +14,7 @@ def unzip(logger, unzip_cmd):
         logger.info(output.decode())
         return unzip_ret  # if unzip success, 0 returned.
     except Exception as ex:
-        logger.error(f"The zip file is corrupted. : {ex}")
+        logger.error(f"unknown error. {ex}")
         return -1
 
 
