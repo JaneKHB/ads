@@ -126,5 +126,5 @@ FILE_LOG_LIPLUS_DOWNLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_download.log'
 FILE_LOG_LIPLUS_UPLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_upload.log'
 FILE_LOG_MAXBYTE = 10 * 1024 * 1024
 FILE_LOG_BACKUPCOUNT = 100
-FILE_LOG_FORMAT = '%(asctime)s [%(levelname)8s | %(name)6s, %(module)s(%(lineno)s)] --- %(message)s'
+FILE_LOG_FORMAT = '%(asctime)s [%(levelname)8s | %(name)6s, %(module)s(%(lineno)3s)] --- %(message)s'
 FILE_LOG_DATEFMT = '%Y%m%d'

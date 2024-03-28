@@ -60,12 +60,10 @@ class LiplusFileGet:
         tool_df = pd.read_csv(file_path, encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
         col_count = int(tool_df.shape[1])
         if col_count == 7:
-            tool_df = pd.read_csv(file_path, names=LIPLUS_TOOL_INFO_HEADER_7, dtype=LIPLUS_TOOL_DATA_TYPE_7,
-                                  encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
+            tool_df = pd.read_csv(file_path, names=LIPLUS_TOOL_INFO_HEADER_7, dtype=LIPLUS_TOOL_DATA_TYPE_7, encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
             tool_df["reg_folder"] = ""
         else:
-            tool_df = pd.read_csv(file_path, names=LIPLUS_TOOL_INFO_HEADER, dtype=LIPLUS_TOOL_DATA_TYPE,
-                                  encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
+            tool_df = pd.read_csv(file_path, names=LIPLUS_TOOL_INFO_HEADER, dtype=LIPLUS_TOOL_DATA_TYPE, encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
 
         return tool_df
 
@@ -75,7 +73,7 @@ class LiplusFileGet:
             return
 
         # Processing Start Time
-        start_time_collection_loop = time.time()
+        processing_start_time = time.time()
 
         for _, elem in self.tool_df.iterrows():
             # 	rem	設定ファイル「LiplusTool.csv」から、
@@ -95,11 +93,12 @@ class LiplusFileGet:
                                  elem.get('userid'), elem.get('userpasswd'), elem.get('reg_folder'))
 
         # Processing End Time
-        end_time_collection_loop = time.time()
+        processing_end_time = time.time()
+        processing_time = processing_end_time - processing_start_time
 
         # Processing Time logging
         logger_header = f"[{self.toolid}]"
-        self.logger.info(f"{logger_header} Total time for the collection process:{(end_time_collection_loop - start_time_collection_loop):.2f}[sec] ")
+        self.logger.info(f"{logger_header} Total time for the collection process:{processing_time :.2f}[sec] ")
 
     def liplus_get_tool(self, ca_name, toolid, espaddr, cntlmt, userid, userpasswd, reg_folder):
         self.ca_name = ca_name
@@ -110,11 +109,11 @@ class LiplusFileGet:
         self.userpasswd = userpasswd  # ユーザパスワード (User Password)
 
         logger_header = f"[{self.toolid}]"
+        liplus_get_log_path = os.path.dirname(FILE_LOG_LIPLUS_GET_PATH.format(f"_{self.pno}"))
         self.logger.info(f"{logger_header} liplus_get_tool start!!")
 
         protocol = "http"
         time_second = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
-        liplus_get_log_path = os.path.dirname(FILE_LOG_LIPLUS_GET_PATH % self.pno)
 
         # Liplus Data Download Folder
         if reg_folder == "":
@@ -160,7 +159,7 @@ class LiplusFileGet:
         next_url = url + "?" + parameter + "&NEXT=1"
 
         # Save the download URL as file.
-        url_folder_path = liplus_get_log_path + "/" + "get_url"
+        url_folder_path = liplus_get_log_path + "/" + f"get_url_{self.pno}"
         os.makedirs(url_folder_path, exist_ok=True)
 
         self.write_to_file(f"{url_folder_path}/{self.toolid}_DL.txt", base_url)
@@ -174,7 +173,7 @@ class LiplusFileGet:
             fname = f"{reg_folder_tmp}/{self.toolid}-{datetimenow}.zip"
 
             # Call collection files download url
-            tick_download_start = time.time()
+            download_start_time = time.time()
 
             self.logger.info(f"{logger_header} download URL : {base_url}")
             rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
@@ -186,7 +185,8 @@ class LiplusFileGet:
                 self.logger.error(f"{logger_header} errorcode:2000 msg:Failed to retry collecting {fname} from ESP")
                 break
 
-            tick_download_end = time.time() - tick_download_start
+            download_end_time = time.time()
+            download_time = download_end_time - download_start_time
 
             # Check File is Last. If Unknown returns, File is last. There are no more files to take.
             if check_unknown(fname):
@@ -196,7 +196,7 @@ class LiplusFileGet:
                 self.logger.info(f"{logger_header} findstr \"Unknown\": false. '{fname}'")
 
             # Unzip Downloaded File
-            tick_7zip_start = time.time()
+            unzip_start_time = time.time()
             unzip_cmd = ['7z', 'x', '-aoa', f'-o{reg_folder_tmp}', fname]
             unzip_ret = unzip(self.logger, unzip_cmd)
 
@@ -206,8 +206,9 @@ class LiplusFileGet:
                 break   # if unzip fail, then loop end
 
             # Unzipping time
-            tick_7zip_end = time.time() - tick_7zip_start
-            self.logger.info(f"{logger_header} Unzipping time of a '{fname}':{tick_7zip_end:.3f}[sec]")
+            unzip_end_time = time.time()
+            unzip_time = unzip_end_time - unzip_start_time
+            self.logger.info(f"{logger_header} Unzipping time of a '{fname}':{unzip_time:.3f}[sec]")
 
             # Logging downloaded files
             size_bytes = os.path.getsize(fname)

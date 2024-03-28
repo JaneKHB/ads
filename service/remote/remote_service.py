@@ -60,10 +60,6 @@ def remote_ssh_command(ssh_key_path, username, host, command):
 
 
 def remote_scp_send_files(sshkey_path, source_folder, user, ip, dir):
-    # todo
-    if platform == "win32":
-        return D_SUCCESS
-
     subprocess_command = [
         'scp',
         '-oStrictHostKeyChecking=no',

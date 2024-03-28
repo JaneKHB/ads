@@ -38,7 +38,8 @@ def liplus_transfer_loop(logger, pname, sname, pno: Union[int, None]):
         obj = LiplusFileTransfer(logger, pname, sname, pno)
         obj.start()
 
-        time.sleep(loop_interval)
+        # time.sleep(loop_interval)
+        break
 
 
 if __name__ == '__main__':
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, SignalHandler)
     signal.signal(signal.SIGTERM, SignalHandler)
 
-    logger_path = config.FILE_LOG_LIPLUS_GET_PATH.format(f"_{pno}")
+    logger_path = config.FILE_LOG_LIPLUS_TRANSFER_PATH.format(f"_{pno}")
     logger = log.FileLogger("LIPLUS_TRANFER", log.Setting(logger_path))
 
     liplus_transfer_loop(logger, "LIPLUS", "TRANSFER", pno)
