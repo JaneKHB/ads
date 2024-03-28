@@ -18,7 +18,8 @@ from service.capa.capa_service import check_capacity
 from service.common.common_service import remove_files_in_folder, rmdir_func
 from service.ini.ini_service import get_ini_value
 from service.process.liplus_process.get.file_get import LiplusFileGet
-from service.remote.remote_service import remote_check_path_by_sshkey, remote_scp_send_files
+from service.remote.remote_service import remote_check_path_by_sshkey
+from service.remote.ssh_manager import SSHManager
 from service.sevenzip.sevenzip_service import unzip
 
 
@@ -75,7 +76,8 @@ class LiplusFileTransfer:
         liplus_transfer_log_path = os.path.dirname(FILE_LOG_LIPLUS_TRANSFER_PATH.format(f"_{self.pno}"))
         self.logger.info(f"{logger_header} LiplusTransfer_Tool.bat start!!")
 
-        ldb_dit_split = ldb_dir.split("\\", 4)
+        ldb_dir = ldb_dir.replace("\\", "/")
+        ldb_dit_split = ldb_dir.split("/", 4)
         remote_liplus_ip = ldb_dit_split[2]
         remote_liplus_dir = "/liplus/" + ldb_dit_split[4]
         ldb_user = get_ini_value(config_ini, "LIPLUS", "LIPLUS_LDB_USER")
@@ -85,21 +87,26 @@ class LiplusFileTransfer:
             self.reg_folder = LIPLUS_REG_FOLDER_DEFAULT + "/" + self.toolid
 
         # rem debug --------------
-        self.logger.info(f"{logger_header} TOOLID: {self.toolid}")
         self.logger.info(f"{logger_header} REMOTE_LIPLUS_IP: {remote_liplus_ip}")
         self.logger.info(f"{logger_header} REMOTE_LIPLUS_DIR: {remote_liplus_dir}")
         self.logger.info(f"{logger_header} REG_FOLDER: {self.reg_folder}")
 
         # reg_folder check
         if not os.path.exists(self.reg_folder):
-            self.logger.error(f"{logger_header} f{reg_folder} folder not found")
+            self.logger.warn(f"{logger_header} f{reg_folder} folder not found")
             return
 
-        # LiplusDB transfer target folder check
-        rtn = remote_check_path_by_sshkey(self.logger, self.sshkey_path, ldb_user, remote_liplus_ip, remote_liplus_dir)
-        if rtn != D_SUCCESS:
-            self.logger.error(
-                f"{logger_header} LiplusDB transfer target folder not exist. '{remote_liplus_dir}'. end processing")
+        # ssh folder check
+        try:
+            ssh_client = SSHManager(self.logger)
+            ssh_client.create_ssh_client(ip=remote_liplus_ip, username=ldb_user, sshkey_path=self.sshkey_path)
+            is_exist_target_folder = ssh_client.sftp_exists(remote_path=remote_liplus_dir)
+            ssh_client.close()
+            if not is_exist_target_folder:
+                self.logger.error(f"{logger_header} LiplusDB transfer target folder not exist. '{remote_liplus_dir}'. end processing")
+                return
+        except Exception as ex:
+            self.logger.error(f"{logger_header} LiplusDB transfer target folder check error. {ex}")
             return
 
         list_dir = os.listdir(self.reg_folder)
@@ -133,36 +140,30 @@ class LiplusFileTransfer:
             self.logger.info(f"{logger_header} Unzipping time of a '{file}':{unzip_time:.3f}[sec]")
 
             # ZIP File Remove todo 원본은 여기서 지우는데 올바를까?
-            if os.path.exists(file):
-                self.logger.info(f"{logger_header} rmdir '{file}'")
-                os.remove(file)
+            # if os.path.exists(file):
+            #     self.logger.info(f"{logger_header} rmdir '{file}'")
+            #     os.remove(file)
 
             # File transfer starts.
             self.logger.info(f"{logger_header} file transfer starts.")
             transfer_start = time.time()
 
-            scp_ret = 0
-            if os.path.exists(self.sshkey_path):
-                source_dir = unzip_dir + "/*"
-                scp_cmd = ['scp', '-oStrictHostKeyChecking=no', '-i', self.sshkey_path, '-r', source_dir, f'{ldb_user}@{remote_liplus_ip}:{remote_liplus_dir}']
-                scp_subprocess = subprocess.Popen(scp_cmd, shell=True, stdout=subprocess.PIPE)
-                scp_output = scp_subprocess.communicate()[0]  # waiting process(unzip) to end
-                scp_ret = scp_subprocess.returncode
-                self.logger.info(scp_output.decode())
-            else:
-                scp_ret = -1
-                self.logger.warn(f"{logger_header} ssh-key not exist. '{self.sshkey_path}'")
+            try:
+                # scp transfer
+                ssh_client = SSHManager(self.logger)
+                ssh_client.create_ssh_client(ip=remote_liplus_ip, username=ldb_user, sshkey_path=self.sshkey_path)
+                ssh_client.send_all_file(local_folder=unzip_dir, remote_folder=remote_liplus_dir)
+                ssh_client.close()
+
+                # SCP Transfer Success
+                self.logger.info(f"{logger_header} SCP transfer success. '{file}'")
+            except Exception as ex:
+                # SCP Transfer Fail
+                self.logger.error(f"{logger_header} errorcode:3000 msg:SCP transfer of '{file}' failed. {ex}")
 
             # SCP Transfer Time
             transfer_end = time.time() - transfer_start
-            self.logger.info(f"{logger_header} Transfer time to LiplusDB server: :{transfer_end:.3f}[sec]")
-
-            if scp_ret == D_SUCCESS:
-                # SCP Transfer Success
-                self.logger.info(f"{logger_header} Transfer success. file transfer end.")
-            else:
-                # SCP Transfer Fail
-                self.logger.error(f"{logger_header} SCP transfer of {unzip_dir} failed.")
+            self.logger.info(f"{logger_header} SCP transfer time to LiplusDB server: :{transfer_end:.3f}[sec]")
 
             # Unzip Folder Remove
             self.logger.info(f"{logger_header} rmdir '{unzip_dir}'")
