@@ -116,7 +116,7 @@ class LiplusFileGet:
         time_second = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
 
         # Liplus Data Download Folder
-        if reg_folder == "":
+        if reg_folder == "" or pd.isna(reg_folder):
             self.reg_folder = LIPLUS_REG_FOLDER_DEFAULT + "/" + self.toolid
 
         # Liplus Data Temp Folder
