@@ -20,7 +20,7 @@ from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
     LIPLUS_CURRENT_DIR, LIPLUS_TOOL_CSV, LIPLUS_TOOL_INFO_HEADER_7, LIPLUS_TOOL_DATA_TYPE_7, LIPLUS_TOOL_INFO_HEADER, \
     LIPLUS_TOOL_DATA_TYPE, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH
 from service.capa.capa_service import check_capacity
-from service.common.common_service import check_unknown, rmdir_func
+from service.common.common_service import check_unknown, rmdir_func, get_csv_info
 from service.http.request import esp_download
 from service.ini.ini_service import get_ini_value
 from service.security.security_service import security_info
@@ -35,7 +35,7 @@ class LiplusFileGet:
         self.pno = pno
 
         self.current_dir = LIPLUS_CURRENT_DIR
-        self.tool_df = LiplusFileGet.get_tool_info(self.pno)
+        self.tool_df = get_csv_info("LIPLUS", "TRANSFER", self.pno)
 
         self.ca_name = None
         self.toolid = None  # 装置名 (MachineName)
@@ -52,22 +52,6 @@ class LiplusFileGet:
         self.securityinfo_path = SECURITYINFO_PATH
         self.securitykey_path = get_ini_value(config_ini, "SECURITY", "SECURITYKEY_PATH")
         self.twofactor = {}
-
-    @staticmethod
-    def get_tool_info(pno):
-        file_path = LIPLUS_TOOL_CSV % pno
-        skiprows = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_TOOL_INFO_SKIP_LINE"))
-        tool_df = pd.read_csv(file_path, encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
-        col_count = int(tool_df.shape[1])
-        if col_count == 7:
-            tool_df = pd.read_csv(file_path, names=LIPLUS_TOOL_INFO_HEADER_7, dtype=LIPLUS_TOOL_DATA_TYPE_7,
-                                  encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
-            tool_df["reg_folder"] = ""
-        else:
-            tool_df = pd.read_csv(file_path, names=LIPLUS_TOOL_INFO_HEADER, dtype=LIPLUS_TOOL_DATA_TYPE,
-                                  encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
-
-        return tool_df
 
     def start(self):
         # Capacity Check

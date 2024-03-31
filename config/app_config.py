@@ -50,7 +50,7 @@ LIPLUS_ONDEMAND_DIR = "/ADS/ondemand/"
 LIPLUS_REG_FOLDER_DEFAULT = "/ADS/Liplus_LOG"
 LIPLUS_REG_FOLDER_TMP = "/ADS/Liplus_TMP"
 
-LIPLUS_TOOL_CSV = "/ADS/csv/LiplusToolInfo%d.csv"
+LIPLUS_TOOL_CSV = "/ADS/csv/LiplusToolInfo{}.csv"
 LIPLUS_DOWNLOAD_INFO_CSV = "/ADS/csv/DownloadInfo.csv"
 LIPLUS_UPLOAD_INFO_CSV = "/ADS/csv/UploadInfo.csv"
 # ----------------------------------------------
@@ -116,14 +116,14 @@ PROCESS_SCRIPT = 'process_main.py'
 # ----------------------------------------------
 # Log System Settings
 FILE_LOG = 'APP_LOG'
-FILE_LOG_PATH = '/ADS/devlog/'
-FILE_LOG_LIPLUS_PATH = FILE_LOG_PATH + 'Liplus/'
-FILE_LOG_MAIN_PATH = FILE_LOG_PATH + 'ads_dev_log.log'
-FILE_LOG_SETUP_CSV_PATH = FILE_LOG_PATH + 'setup_csv.log'
-FILE_LOG_LIPLUS_GET_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_get{}.log'
-FILE_LOG_LIPLUS_TRANSFER_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_transfer{}.log'
-FILE_LOG_LIPLUS_DOWNLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_download.log'
-FILE_LOG_LIPLUS_UPLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_upload.log'
+FILE_LOG_PATH = '/ADS/devlog'
+FILE_LOG_LIPLUS_PATH = FILE_LOG_PATH + '/Liplus'
+FILE_LOG_MAIN_PATH = FILE_LOG_PATH + '/ads_dev_log.log'
+FILE_LOG_SETUP_CSV_PATH = FILE_LOG_PATH + '/setup_csv.log'
+FILE_LOG_LIPLUS_GET_PATH = FILE_LOG_LIPLUS_PATH + '/liplus_get{}.log'
+FILE_LOG_LIPLUS_TRANSFER_PATH = FILE_LOG_LIPLUS_PATH + '/liplus_transfer{}.log'
+FILE_LOG_LIPLUS_DOWNLOAD_PATH = FILE_LOG_LIPLUS_PATH + '/liplus_download.log'
+FILE_LOG_LIPLUS_UPLOAD_PATH = FILE_LOG_LIPLUS_PATH + '/liplus_upload.log'
 FILE_LOG_MAXBYTE = 10 * 1024 * 1024
 FILE_LOG_BACKUPCOUNT = 100
 FILE_LOG_FORMAT = '%(asctime)s [%(levelname)8s | %(name)6s, %(module)s(%(lineno)s)] --- %(message)s'
