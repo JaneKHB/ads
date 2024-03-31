@@ -21,14 +21,12 @@ import util.time_util as time_util
 from pathlib import Path
 
 from service.ini.ini_service import get_ini_value
-from service.logger.db_logger_service import DbLogger
-from service.redis.redis_service import get_redis_global_status
 from service.security.security_service import security_info
 from service.common.common_service import file_size_logging, check_capacity, get_csv_info, rmtree
 
 # \ADS\OnDemandCollectDownload\collectFileDownload.bat
 class CollectFileDownload:
-    def __init__(self, logger: DbLogger, pname, sname, pno: Union[int, None]):
+    def __init__(self, logger, pname, sname, pno: Union[int, None]):
         self.logger = logger
         self.pname = pname
         self.sname = sname
@@ -68,8 +66,6 @@ class CollectFileDownload:
         tick_download_start = time.time()
         for _, elem in self.tool_df.iterrows():
             # Mainが緊急終了状態 긴급 종료 상태
-            if get_redis_global_status(config.D_REDIS_SHUTDOWN_KEY) == config.D_SHUTDOWN:
-                break
 
             # rem --------------------------------------------------------------
             # rem  1:%%i : 接続先ESPアドレス ESP 주소
@@ -97,8 +93,8 @@ class CollectFileDownload:
 
         self.logger.info("LiplusGet_Tool Start.")
 
-        self.reg_folder.mkdir(exist_ok=True)
-        self.zip_backup_folder.mkdir(exist_ok=True)
+        os.makedirs(self.reg_folder.absolute(), exist_ok=True)
+        os.makedirs(self.zip_backup_folder.absolute(), exist_ok=True)
 
         # REM 2要素認証の利用有無を判別
         # 2요소 인증의 이용 유무를 판별

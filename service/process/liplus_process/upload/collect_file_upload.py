@@ -23,14 +23,12 @@ from typing import Union
 from pathlib import Path
 
 from service.ini.ini_service import get_ini_value
-from service.logger.db_logger_service import DbLogger
-from service.redis.redis_service import get_redis_global_status
 from service.security.security_service import security_info
 from service.common.common_service import create_upfile_tmp, file_size_logging, get_csv_info
 
 # \ADS\CollectRequestFileUpload\Auto_Upload.bat
 class CollectFileUpload:
-    def __init__(self, logger: DbLogger, pname, sname, pno: Union[int, None]):
+    def __init__(self, logger, pname, sname, pno: Union[int, None]):
         self.logger = logger
         self.pname = pname
         self.sname = sname
@@ -51,12 +49,10 @@ class CollectFileUpload:
 
     def start(self):
 
-        self.upload_dir.mkdir(exist_ok=True)
+        os.makedirs(self.upload_dir.absolute(), exist_ok=True)
 
         for _, elem in self.tool_df.iterrows():
             # Mainが緊急終了状態 긴급 종료 상태
-            if get_redis_global_status(config.D_REDIS_SHUTDOWN_KEY) == config.D_SHUTDOWN:
-                break
 
             # rem --------------------------------------------------------------
             # rem 設定ファイル「UploadInfo.csv」では以下の項目が列挙されており、

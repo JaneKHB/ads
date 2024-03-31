@@ -15,7 +15,7 @@ from typing import Union
 from config.app_config import D_SUCCESS, D_ERROR, LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
     FILE_LOG_LIPLUS_TRANSFER_PATH
 from service.capa.capa_service import check_capacity
-from service.common.common_service import remove_files_in_folder, rmdir_func
+from service.common.common_service import remove_files_in_folder, rmdir_func, get_csv_info
 from service.ini.ini_service import get_ini_value
 from service.process.liplus_process.get.file_get import LiplusFileGet
 from service.remote.remote_service import remote_check_path_by_sshkey
@@ -31,7 +31,7 @@ class LiplusFileTransfer:
         self.pno = pno
 
         self.current_dir = LIPLUS_CURRENT_DIR
-        self.tool_df = LiplusFileGet.get_tool_info(self.pno)
+        self.tool_df = get_csv_info("LIPLUS", "TRANSFER", self.pno)
         self.sshkey_path = get_ini_value(config_ini, "SECURITY", "SSHKEY_PATH")
 
         self.toolid = None  # 装置名 (MachineName)

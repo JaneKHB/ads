@@ -79,7 +79,7 @@ def copy_csv(original_csv_path, base_dir):
     elif "else_file" in original_csv_path:
         csv_type = -1
 
-    copy_from_dir.mkdir(exist_ok=True)
+    os.makedirs(copy_from_dir.absolute(), exist_ok=True)
     logger.info(f"make dir [{copy_from_dir.absolute()}]")
 
     # 設定ファイルの存在しないScriptに関しては何もせずコピー
@@ -323,7 +323,7 @@ def make_fdt():
 
     # ConfXmlをftd_bacthへ移動する
     # ConfXml을 ftd_bacth로 이동
-    fdt_conf_dir.mkdir(exist_ok=True)
+    os.makedirs(fdt_conf_dir.absolute(), exist_ok=True)
     try:
         shutil.move(conf_xml, Path(fdt_conf_dir, conf_xml.name))
     except Exception as e:
@@ -332,7 +332,7 @@ def make_fdt():
     # fdt_batchのpropertieファイルを生成する
     # fdt_batch의 property 파일 생성
     temp_properties_dir = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp", "tmp_Properties")
-    temp_properties_dir.mkdir(exist_ok=True)
+    os.makedirs(temp_properties_dir.absolute(), exist_ok=True)
     header_properties = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
                              "ToolName_Properties_Footer.txt")
     footer_properties = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
@@ -413,7 +413,7 @@ def setup_csv():
 
     # REM 古いセットアップファイルを保持しておくためのフォルダを生成する
     # 이전 설치 파일을 보관할 폴더 생성
-    old_dir_name.mkdir(exist_ok=True)
+    os.makedirs(old_dir_name.absolute(), exist_ok=True)
     logger.info(f"make dir [{old_dir_name.absolute()}]")
 
     # REM セットアップファイルの種類を取得する
@@ -444,7 +444,7 @@ def setup_csv():
 
     # REM ADSセットアップスクリプトを展開する専用のフォルダを作成
     # ADS 설치 스크립트를 배포하는 전용 폴더 만들기
-    target_dir.mkdir(exist_ok=True)
+    os.makedirs(target_dir.absolute(), exist_ok=True)
     logger.info(f"make dir [{target_dir.absolute()}]")
 
     # REM セットアップファイル名の入ったtxtを削除
@@ -486,9 +486,9 @@ def setup_csv():
     fs_log = Path(current_dir, "FSLOG")
     ondemand = Path(current_dir, "ondemand")
 
-    fs_log.mkdir(exist_ok=True)
+    os.makedirs(fs_log.absolute(), exist_ok=True)
     logger.info(f"make dir [{fs_log.absolute()}]")
-    ondemand.mkdir(exist_ok=True)
+    os.makedirs(ondemand.absolute(), exist_ok=True)
     logger.info(f"make dir [{ondemand.absolute()}]")
 
 if __name__ == '__main__':

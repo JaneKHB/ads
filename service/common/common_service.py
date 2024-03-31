@@ -2,6 +2,7 @@ import datetime
 import os
 import shutil
 import stat
+import zipfile
 
 import pandas as pd
 import config.app_config as config
@@ -133,7 +134,7 @@ def check_capacity(bat_name):
 
     return True
 
-def get_csv_info(module, type):
+def get_csv_info(module, type, pno=0):
     file_path = None
     ini_section = None
     ini_key = None
@@ -153,6 +154,15 @@ def get_csv_info(module, type):
             ini_key = "LIPLUS_DOWNLOAD_INFO_SKIP_LINE"
             read_names = config.LIPLUS_DOWNLOAD_INFO_HEADER
             read_dttype = config.LIPLUS_DOWNLOAD_DATA_TYPE
+        elif type == "GET" or type == "TRANSFER":
+            file_path = config.LIPLUS_TOOL_CSV.format(pno)
+            ini_section = module
+            ini_key = "LIPLUS_TOOL_INFO_SKIP_LINE"
+            read_names = config.LIPLUS_TOOL_INFO_HEADER
+            read_dttype = config.LIPLUS_TOOL_DATA_TYPE
+            pass
+        elif type == "TRANSFER":
+            pass
     elif module == "FDT":
         pass
 
@@ -161,3 +171,16 @@ def get_csv_info(module, type):
                           encoding='shift_jis',
                           skiprows=skiprows, sep=',', index_col=False)
     return tool_df
+
+def unzip_zipfile(logger, zip_path, unzip_dir):
+    try:
+        if not Path(zip_path).exists() or Path(unzip_dir).exists():
+            logger.info("This is the wrong path.")
+            return False
+
+        with zipfile.ZipFile(zip_path) as z:
+            z.extractall(unzip_dir)
+
+        return True
+    except Exception as e:
+        logger.error(e)
