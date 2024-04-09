@@ -12,7 +12,7 @@ import shutil
 from typing import Union
 
 from config.app_config import D_ERROR, D_SUCCESS, config_ini, FDT_CURRENT_DIR, D_SHUTDOWN, FDT_ADS2_FOLDER, D_REDIS_SHUTDOWN_KEY
-from service.gz.gz_service import gz_compress
+from service.zip.gz_service import gz_compress
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
 from service.process.fdt_process.download.file_download import FdtFileDownload

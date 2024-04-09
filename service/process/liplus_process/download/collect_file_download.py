@@ -13,18 +13,22 @@ import shutil
 import time
 import subprocess
 import datetime
-import uuid
 
 import config.app_config as config
 import util.time_util as time_util
 
 from pathlib import Path
 
+from service.capa.capa_service import check_capacity
 from service.ini.ini_service import get_ini_value
+from service.remote.remote_service import isExistWget
+from service.remote.request import subprocess_run
+from service.remote.ssh_manager import SSHManager
 from service.security.security_service import security_info
-from service.common.common_service import file_size_logging, check_capacity, get_csv_info, rmtree
+from service.common.common_service import file_size_logging, get_csv_info, rmtree
+from service.zip.sevenzip_service import unzip, isExist7zip
 
-# \ADS\OnDemandCollectDownload\collectFileDownload.bat
+
 class CollectFileDownload:
     def __init__(self, logger, pname, sname, pno: Union[int, None]):
         self.logger = logger
@@ -39,11 +43,11 @@ class CollectFileDownload:
         self.log_transfer = "file_transfer.log"
         self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
 
-        self.espaddr = None  # 接続先ESPアドレス ESP 주소
-        self.userid = None  # ログインユーザID 사용자명
-        self.userpasswd = None  # ログインユーザパスワード 비밀번호
-        self.local_fab = None  # LocalFab名（置換前） LocalFab 이름(교체 전)
-        self.remote_fab = None  # RemoteFab名（置換後） RemoteFab 이름(교체 후)
+        self.espaddr = None  # 接続先ESPアドレス (ESP Address)
+        self.userid = None  # ログインユーザ (User Id)
+        self.userpasswd = None  # ログインユーザパスワード (User Password)
+        self.local_fab = None  # LocalFab名 (置換前)
+        self.remote_fab = None  # RemoteFab名 (置換後)
 
         self.retry_max = 5
         self.retry_sleep = 2
@@ -57,32 +61,32 @@ class CollectFileDownload:
         self.twofactor = {}
 
     def start(self):
-
-        # REM 空き容量チェック（対象ドライブと空き容量リミット％を設定）
-        # 여유 용량 체크(대상 드라이브와 여유 용량 리미트%를 설정)
+        # Capacity Check
         if not check_capacity("CollectFileDownload"):
             return
 
-        tick_download_start = time.time()
+        # Processing Start Time
+        processing_start_time = time.time()
+
         for _, elem in self.tool_df.iterrows():
-            # Mainが緊急終了状態 긴급 종료 상태
-
             # rem --------------------------------------------------------------
-            # rem  1:%%i : 接続先ESPアドレス ESP 주소
-            # rem  2:%%j : ログインユーザID 사용자ID
-            # rem  3:%%k : ログインユーザパスワード 사용자 비밀번호
-            # rem  4:%%l : LocalFab名（置換前） LocalFab 이름(교체 전)
-            # rem  5:%%m : RemoteFab名（置換後） RemoteFab 이름(교체 후)
+            # rem  1:%%i : 接続先ESPアドレス (ESP Address)
+            # rem  2:%%j : ログインユーザID (User Id)
+            # rem  3:%%k : ログインユーザパスワード (User Password)
+            # rem  4:%%l : LocalFab名（置換前）
+            # rem  5:%%m : RemoteFab名（置換後）
             # rem --------------------------------------------------------------
 
-            self._liplusget_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), elem.get('local_fab'), elem.get('remote_fab'))
+            self._liplus_get_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), elem.get('localfab'), elem.get('remotefab'))
 
-        tick_download_end = time.time() - tick_download_start
-        self.logger.info(f"Total time for the collection process:{tick_download_end}[sec]")
+        # Processing End Time
+        processing_end_time = time.time()
+        processing_time = processing_end_time - processing_start_time
 
-    # \ADS\OnDemandCollectDownload\LiplusGet_Tool.bat
-    def _liplusget_tool(self, espaddr, userid, userpasswd, local_fab, remote_fab):
+        # Processing Time logging
+        self.logger.info(f"Total time for the collection process:{processing_time :.2f}[sec] ")
 
+    def _liplus_get_tool(self, espaddr, userid, userpasswd, local_fab, remote_fab):
         self.espaddr = espaddr
         self.userid = userid
         self.userpasswd = userpasswd
@@ -91,88 +95,128 @@ class CollectFileDownload:
 
         protocol = "http"
 
-        self.logger.info("LiplusGet_Tool Start.")
+        self.logger.info("liplus_get_tool start!!")
 
+        # Make folder
         os.makedirs(self.reg_folder.absolute(), exist_ok=True)
         os.makedirs(self.zip_backup_folder.absolute(), exist_ok=True)
 
-        # REM 2要素認証の利用有無を判別
-        # 2요소 인증의 이용 유무를 판별
+        # Check wget
+        if isExistWget(self.logger) != 0:
+            return
+
+        # Check 7zip
+        if isExist7zip(self.logger) != 0:
+            return
+
+        # Check two Factor Auth
         rtn, self.twofactor = security_info(self.logger, self.espaddr, self.securityinfo_path, self.securitykey_path)
         if rtn == config.D_SUCCESS and len(self.twofactor):
             protocol = "https"
             self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
         elif rtn != config.D_SUCCESS:
             return
-        self.logger.info("download start.")
-        url = f"{protocol}://{self.espaddr}/OnDemandAgent/Download?USER={self.userid}&PW={self.userpasswd}"
-        # 다른 프로세스에서도 result.tmp를 만들기 uuid로 구분
 
-        time_now = datetime.datetime.now()
-        self.result_file = Path(f"./result_{uuid.uuid4()}.tmp")
-        self.download_file = Path(self.reg_folder.absolute(), f"tmp_download_{uuid.uuid4()}.zip")
-        command = [
+        self.logger.info("download start.")
+
+        url = f"{protocol}://{self.espaddr}/OnDemandAgent/Download?USER={self.userid}&PW={self.userpasswd}"
+        self.logger.info(f"download url : {url}")
+
+        self.result_file = Path(self.reg_folder.absolute(), "result.tmp")
+        self.download_file = Path(self.reg_folder.absolute(), "tmp_download.zip")
+
+        # if file(result.tmp, tmp_download.zip) already exist, remove file.
+        self.result_file.unlink(missing_ok=True)
+        self.download_file.unlink(missing_ok=True)
+
+        download_command = [
             "wget"
             , url
             , "-d"
             , "-o"
-            , self.result_file.absolute()
+            , str(self.result_file.absolute())
             , "-O"
-            , self.download_file.absolute()
+            , str(self.download_file.absolute())
             , "-c"
             , "-t"
             , "1"
-            , "T"
+            , "-T"
             , str(self.timeout_second)
-            , self.twofactor
+            # , self.twofactor
         ]
-        self.logger.info(f"subprocess run {command}")
-        res = subprocess.run(command)
 
-        # REM *** wgetコマンドの結果を解析(エラーならリトライ)*********************************************
-        # *** wget 명령의 결과를 구문 분석 (오류라면 재시도) *************************************** ***********
+        # ** Use wget "subprocess" to find file-name in "result.tmp".
+        # if it is an abnormal URL, "result.tmp", "tmp_download.zip" is created. "tmp_downlozd.zip" is blank file.
+        # khb. todo. "result.tmp" 는 파일 이름(ESP 에서 제공하는 실제 파일 이름)을 획득하기 위해 사용되는것으로 판단됨. request 모듈로도 가능한지 체크 필요.
+        self.logger.info(f"wget download command : {download_command}")
+        download_ret = subprocess_run(self.logger, download_command)
+
+        # set collect_file_name (==> find real file name in "result.tmp")
+        collect_file_name = self._get_collect_file_name()
+
+        if collect_file_name == "":
+            self.logger.info("No collection required.")
+
+            # remove result.tmp, download file
+            self.result_file.unlink(missing_ok=True)
+            self.download_file.unlink(missing_ok=True)
+
+            self._end_wget()
+            self._unzip()
+            return
+
+        # rename. tmp_download.zip ==> ESP download file name
+        self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
+        self.logger.info(f"rename [{self.download_file.absolute()}] -> [{collect_file_name}]")
+
+        # check wget return code
         for _ in range(self.retry_max):
-
-            collect_file_name = self._get_collect_file_name(self.reg_folder.absolute())
-            if collect_file_name == "":
-                self.logger.info("No collection required.")
-                break
-
-            self.download_file.rename(collect_file_name)
-            self.logger.info(f"rename [{self.download_file.absolute()}] -> [{collect_file_name}]")
-
-            if res.returncode == 0: # 성공
+            if download_ret == 0:  # download success
                 self.logger.info("wget File Download Request command success")
-
                 self._response_check(self.result_file.absolute())
+
+                # delete result.tmp
                 self.result_file.unlink(missing_ok=True)
                 self.logger.info(f"delete [{self.result_file.absolute()}]")
-                self._upload_ok(url, collect_file_name)
-                break
+
+                # call upload_ok
+                self._upload_ok(url, Path(self.reg_folder.absolute(), collect_file_name))
+                self._end_wget()
+                self._unzip()
+                return
             else:
+                # retry wget
                 self.logger.info("wget retry start")
                 self.logger.info(f"timeout {self.retry_sleep}")
 
                 time.sleep(self.retry_sleep)
-                res = subprocess.run(command)
+                download_ret = subprocess_run(self.logger, download_command)
+
+                collect_file_name = self._get_collect_file_name()
+                self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
 
                 self.logger.info("WARNING msg:Executed retry of file collection from ESP.")
                 self.logger.info("wget retry end")
 
-        # リトライしてもファイル取れなかったらダウンロード処理を終了する
-        # 재시도해도 파일을 얻을 수 없으면 다운로드 처리를 종료합니다.
-        if res.returncode != 0:
+        # if download fail after retry, process ends
+        if download_ret != 0:
             self.logger.info(f"[adslog] ERROR errorcode:2000 msg:Failed to retry collecting {collect_file_name} from ESP.")
             self._response_check(self.result_file.absolute(), is_error=True)
 
-        self.result_file.unlink(missing_ok=True)
-        self.download_file.unlink(missing_ok=True)
+            # remove result.tmp, download file
+            self.result_file.unlink(missing_ok=True)
+            self.download_file.unlink(missing_ok=True)
 
-        self.logger.info("Download end.")
-        self.logger.info("UnZip File Start.")
+            self._end_wget()
+            self._unzip()
+            return
+
+        # call upload_ok
+        self._upload_ok(url, Path(self.reg_folder.absolute(), collect_file_name))
+        self._end_wget()
         self._unzip()
 
-    def _response_check(self, result_path, is_error = False):
+    def _response_check(self, result_path, is_error=False):
         read_line = []
         with open(result_path, "r", errors="ignore") as f:
             read_line = f.read().splitlines()
@@ -185,131 +229,113 @@ class CollectFileDownload:
                     self.logger.info(line)
 
     def _unzip(self):
-
-        # REM *** ZIPファイルの解凍
-        # REM *** ZIP 파일 압축 해제
+        # ZIP file unzip
         for f in self.reg_folder.iterdir():
             if f.suffix == ".zip":
-                # zip_fullpath = f.absolute()
-                zip_filename = f.name
+                zip_fullpath = f.absolute()
+                zip_filename = f.name.removesuffix(".zip")
 
-                # REM *** ZIPファイル名を#を区切り文字として区切る
-                # REM *** ZIP 파일 이름을 #을 구분 기호로 구분
-                # rem %%a:Fab名 %%b:装置シリアル名 %%c:リモートLiplusDBのIPアドレス %%d:日付
-                fab_name, tool_num, remote_liplus_ip = zip_filename.split("#")
+                # Separate ZIP file names with "#" as delimiter
+                tokens = zip_filename.split("#")
+                fab_name = tokens[0]
+                tool_num = tokens[1]
+                remote_liplus_ip = tokens[2]
 
                 if self.local_fab == fab_name:
-                    # rem DownloadInfo.csvのローカルFab名 と ZIPファイルのFab名 が一致している場合、
-                    # rem DownloadInfo.csv의 로컬 Fab 이름이 ZIP 파일의 Fab 이름과 일치하면,
-                    # rem Fab名称をDownloadInfo.csvのリモートFab名に置換する。
-                    # rem Fab 이름을 DownloadInfo.csv의 원격 Fab 이름으로 바꿉니다.
                     fab_name = self.remote_fab
 
-                remote_liplus_dir = Path("liplus", "original_data", fab_name, tool_num)
+                remote_liplus_dir = f"/liplus/original_data/{fab_name}/{tool_num}"
 
-                # REM *** LiplusDBサーバ転送先フォルダの存在確認 *******************
-                # REM *** LiplusDB 서버 대상 폴더의 존재 확인 *******************
-                command = [
-                    "ssh"
-                    , "-i"
-                    , self.sshkey_path
-                    , f"{self.ldb_user}@{remote_liplus_ip}"
-                    , f"test -d {remote_liplus_dir.absolute()}"
-                ]
-                self.logger.info(f"subprocess run {command}")
-                res = subprocess.run(command)
+                # ssh target folder check
+                ssh_client = SSHManager(self.logger)
+                ssh_client.create_ssh_client(ip=remote_liplus_ip, username=self.ldb_user, sshkey_path=self.sshkey_path)
+                is_exist_target_folder = ssh_client.sftp_exists(remote_path=remote_liplus_dir)
 
-                # REM *** ZIPの解凍
-                if res.returncode == 0:
+                # unzip
+                if is_exist_target_folder:
                     unzip_dir = Path(self.reg_folder.absolute(), zip_filename)
-                    tick_unzip_start = time.time()
-                    command_7z = [
-                        "7z"
-                        , "x"
-                        , "-aoa"
-                        , f"-o{unzip_dir.absolute()}"
-                        , f.absolute()
-                    ]
-                    self.logger.info(f"subprocess run {command_7z}")
-                    subprocess.run(command_7z)
-                    tick_unzip_end = time.time() - tick_unzip_start
 
-                    self.logger.info(f"Unzipping time of a {f}:{tick_unzip_end}[sec]")
+                    # Unzip File
+                    unzip_start_time = time.time()
+                    unzip_cmd = ["7z", "x", "-aoa", f"-o{unzip_dir.absolute()}", str(zip_fullpath)]
+                    unzip_ret = unzip(self.logger, unzip_cmd)
 
-                    # REM 解凍の成功可否は解凍先のファイルの有無で判断する。
+                    # Unzipping time
+                    unzip_end_time = time.time()
+                    unzip_time = unzip_end_time - unzip_start_time
+                    self.logger.info(f"Unzipping time of a [{f}]:{unzip_time:.3f}[sec]")
+
+                    # if target_folder
                     # REM 압축 해제의 성공 여부는 압축 해제 대상 파일의 유무로 판단한다.
                     unzip_cnt = sum(1 for cf in unzip_dir.iterdir())
                     self.logger.info(f"Expanded file count:{unzip_cnt}")
+
                     if unzip_cnt > 0:
                         # REM *** ZIPファイルの解凍成功時
                         # REM *** ZIP 파일의 압축 해제 성공 시
                         # REM *** 解凍したZIPファイル内のファイルをLiplusDBへ転送する
                         # REM *** 압축을 푼 ZIP 파일의 파일을 LiplusDB로 전송
-                        self.logger.info(f"{f} :unzip success")
+                        self.logger.info(f"[{f}] :unzip success")
                         self.logger.info(f"file transfer starts.")
+
                         tick_scp_start = time.time()
-                        command_scp = [
-                            "scp"
-                            , "-oStrictHostKeyChecking=no"
-                            , "-i"
-                            , self.sshkey_path
-                            , [f for f in unzip_dir.iterdir()]
-                            , f"{self.ldb_user}@{remote_liplus_ip}:{remote_liplus_dir.absolute()}"
-                        ]
-                        self.logger.info(f"subprocess run {command_scp}")
-                        res_scp = subprocess.run(command_scp)
+                        try:
+                            # scp transfer
+                            ssh_client = SSHManager(self.logger)
+                            ssh_client.create_ssh_client(ip=remote_liplus_ip, username=self.ldb_user, sshkey_path=self.sshkey_path)
+                            ssh_client.send_all_file(local_folder=unzip_dir, remote_folder=remote_liplus_dir)
+                            ssh_client.close()
+
+                            # SCP Transfer Success
+                            self.logger.info(f"[{f}] :transfer success")
+                            self.logger.info(f"del [{f}]")
+
+                            f.unlink(missing_ok=True)
+                        except Exception as ex:
+                            # SCP Transfer Fail
+                            self.logger.info(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed. {ex}")
+
                         tick_scp_end = time.time() - tick_scp_start
                         self.logger.info(f"Transfer time to LiplusDB server:{tick_scp_end}[sec]")
 
-                        if res_scp.returncode != 0:
-                            # REM *** 転送成功時
-                            # REM *** 전송 성공 시
-                            # REM *** ZIPファイルと解凍したフォルダを削除
-                            self.logger.info(f"{f} :transfer success")
-                            self.logger.info(f"del {f}")
-                            f.unlink(missing_ok=True)
-                        else:
-                            # REM *** 転送失敗時
-                            # REM *** 전송 실패 시
-                            self.logger.info(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed.")
-                            pass
-                        # REM *** 解凍したフォルダを削除
-                        # REM *** 압축을 푼 폴더 삭제
-                        self.logger.info(f"rmdir {unzip_dir}")
+                        self.logger.info(f"rmdir [{unzip_dir}]")
                         rmtree(unzip_dir.absolute())
+
                         self.logger.info("file transfer end.")
                     else:
                         # REM *** ZIPファイルの解凍失敗時はBackupフォルダへZIPファイルを移動する
                         # REM *** ZIP 파일의 압축을 풀지 못하면 Backup 폴더로 ZIP 파일을 이동합니다.
-                        self.logger.info(f"{f} :unzip failure")
-                        self.logger.info(f"move {f} -> {self.zip_backup_folder}")
+                        self.logger.info(f"[{f}] :unzip failure")
+                        self.logger.info(f"move [{f}] -> {self.zip_backup_folder}")
                         try:
-                            shutil.move(os.path.join(self.reg_folder.absolute(), f), os.path.join(self.zip_backup_folder, f))
+                            # shutil.move(os.path.join(self.reg_folder.absolute(), f.name),
+                            #             os.path.join(self.zip_backup_folder, f.name))
+                            shutil.move(f, os.path.join(self.zip_backup_folder, f.name))    # khb. todo. 동작하는지 확인 필요!
                         except Exception as e:
                             self.logger.error(e)
+
                         self.logger.info(f"rmdir {unzip_dir}")
                         rmtree(unzip_dir.absolute())
                 else:
-                    self.logger.info(f"!LDB_PATH! not found.")
+                    self.logger.warn(f"LDB_PATH not found. '{remote_liplus_dir}'")
+
         self.logger.info("Unzip File Finished.")
         self.logger.info("LiplusGet_Tool Finished.")
 
     def _upload_ok(self, url, res_path):
 
-        # REM ダウンロードしたファイルのサイズをログ出力する
-        # 다운로드한 파일의 크기를 로깅
+        # Logging downloaded files
         file_size_logging(self.logger, "down", res_path, Path(self.current_dir, self.log_transfer).absolute())
 
-        # REM *** 定期収集ファイルNEXT処理 ***********************************
-        # *** 정기 수집 파일 NEXT 처리 ***********************************
-        # rem ファイルダウンロードパス(NEXT)を出力
-        # rem 파일 다운로드 경로 (NEXT) 출력
-        url_check = url + "&NEXT=true"
-        result_path = Path(f"./result_{uuid.uuid4()}.tmp")
-        command = [
+        # Call collection files NEXT url
+        next_url = url + "&NEXT=true"
+        self.logger.info(f"next url : {next_url}")
+
+        result_path = Path(self.reg_folder.absolute(), "result.tmp")
+        download_next_command = [
             "wget"
             , "--spider"
-            , url_check
+            , next_url
             , "-d"
             , "-o"
             , result_path.absolute()
@@ -317,16 +343,16 @@ class CollectFileDownload:
             , "1"
             , "-T"
             , str(self.timeout_second)
-            , self.twofactor
+            # , self.twofactor
         ]
-        self.logger.info(f"subprocess run {command}")
-        res = subprocess.run(command)
+
+        self.logger.info(f"wget next command : {download_next_command}")
+        download_ret = subprocess_run(self.logger, download_next_command)
 
         # REM *** wgetコマンドの結果を解析し、エラーならNEXT処理をリトライ*********************************************
         # *** wget 명령의 결과를 구문 분석하고 오류가 있으면 NEXT 처리를 재시도 ******************************** *************
         for _ in range(self.retry_max):
-
-            if res.returncode == 0:
+            if download_ret == 0:
                 self.logger.info("wget Next Request command success.")
                 self._response_check(result_path.absolute())
                 break
@@ -335,14 +361,14 @@ class CollectFileDownload:
                 self.logger.info(f"timeout {self.retry_sleep}")
                 time.sleep(self.retry_sleep)
 
-                res = subprocess.run(command)
+                download_ret = subprocess_run(self.logger, download_next_command)
 
                 self.logger.info("WARNING msg:Executed retry of file deletion instruction to ESP.")
                 self.logger.info("wget retry end")
 
         # NEXT処理をリトライしてもエラーの場合、エラーログを出力
         # NEXT 처리를 재 시도해도 오류가 발생하면 오류 로그 출력
-        if res.returncode != 0:
+        if download_ret != 0:
             self.logger.info("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
             # 失敗時のログ出力(ErroCode)
             # 실패시 로그 출력 (ErroCode)
@@ -353,7 +379,7 @@ class CollectFileDownload:
         result_path.unlink(missing_ok=True)
         self.logger.info(f"delete[{result_path.absolute()}]")
 
-    def _get_collect_file_name(self, rename_basepath):
+    def _get_collect_file_name(self):
 
         comp_sharp = "%23"
         comp_plus = "%2B"
@@ -381,13 +407,7 @@ class CollectFileDownload:
                     break
         result_tmp_name.unlink(missing_ok=True)
 
-        if collect_file_name == "":
-            self.result_file.unlink(missing_ok=True)
-            self.download_file.unlink(missing_ok=True)
-            return None
+        return collect_file_name
 
-        if self.download_file.exists():
-            rename_path = Path(rename_basepath, collect_file_name)
-            self.download_file.rename(rename_path.absolute())
-            return rename_path.absolute()
-
+    def _end_wget(self):
+        self.logger.info("Download end.")

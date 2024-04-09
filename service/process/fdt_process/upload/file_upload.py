@@ -15,14 +15,14 @@ import shutil
 import random
 
 import config.app_config as config
-import service.http.request as req
+import service.remote.request as req
 import util.time_util as time_util
 
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
 from service.redis.redis_service import get_redis_global_status
 from service.security.security_service import security_info
-from service.common.common_service import create_upfile_tmp
+from service.common.common_service import create_ulfile_tmp
 
 # \ADS\UploadBatch\Auto_Upload.bat
 class FdtFileUpload:
@@ -151,7 +151,7 @@ class FdtFileUpload:
 
         # REM *** wgetコマンドで送信するファイルにboundaryを設定する ***********************
         # wget 명령으로 전송할 파일에 boundary 설정
-        file_tmp = create_upfile_tmp(file_path, boundary)
+        file_tmp = create_ulfile_tmp(file_path, boundary)
         rtn = req.esp_upload(self.logger, real_url, header, file_tmp, self.fname, time_second, self.twofactor
                              , self.retry_max, self.retry_sleep)
         file_tmp.unlink(missing_ok=True)

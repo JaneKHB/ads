@@ -35,7 +35,7 @@ class SSHManager:
         try:
             local_file_list = os.listdir(local_folder)
             for filename in local_file_list:
-                file = local_folder + os.sep + filename
+                file = str(f"{local_folder}{os.sep}{filename}")
                 self.sftp_client.put(file, remote_folder + "/" + filename)
         except Exception as ex:
             raise ex

@@ -22,7 +22,7 @@ from service.logger.db_logger_service import DbLogger
 from service.process.fdt_process.download.file_download import FdtFileDownload
 from service.redis.redis_service import get_redis_global_status
 from service.remote.remote_service import remote_scp_send_files, remote_check_path_by_sshkey
-from service.http.request import esp_download
+from service.remote.request import esp_download
 from service.security.security_service import security_info
 
 

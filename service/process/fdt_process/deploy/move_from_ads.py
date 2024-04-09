@@ -11,7 +11,7 @@ import os
 
 from config.app_config import config_ini, FDT_CURRENT_DIR, D_SHUTDOWN, D_SUCCESS, FDT_ADS2_FOLDER, FDT_ADS2_UPLOAD, D_REDIS_SHUTDOWN_KEY
 from service.common.common_service import xcopy_file_to_dir, rmdir_func
-from service.gz.gz_service import gz_uncompress
+from service.zip.gz_service import gz_uncompress
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
 from service.process.fdt_process.download.file_download import FdtFileDownload

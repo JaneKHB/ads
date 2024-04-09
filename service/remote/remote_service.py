@@ -75,3 +75,12 @@ def remote_scp_send_files(sshkey_path, source_folder, user, ip, dir):
         return D_ERROR
     else:
         return D_SUCCESS
+
+
+def isExistWget(logger):
+    checkWget = subprocess.run(['wget', '-V'], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
+    ret = checkWget.returncode
+    if ret != 0:
+        logger.error("errorcode:1000 msg:Wget command does not exist.")
+
+    return ret

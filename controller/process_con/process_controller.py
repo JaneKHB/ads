@@ -1,11 +1,7 @@
 from flask import make_response, jsonify
 from flask_restx import Resource, Namespace
 
-from service.logger.db_logger_service import DbLogger
-
-logger = DbLogger('srv', 'ctrl')
 ProcessNS = Namespace('Process API', description=f'')
-
 
 
 @ProcessNS.route('/')

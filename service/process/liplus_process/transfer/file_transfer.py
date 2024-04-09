@@ -10,17 +10,17 @@
 import os
 import subprocess
 import time
+import pandas as pd
+
 from typing import Union
 
-from config.app_config import D_SUCCESS, D_ERROR, LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
+from config.app_config import LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
     FILE_LOG_LIPLUS_TRANSFER_PATH
 from service.capa.capa_service import check_capacity
-from service.common.common_service import remove_files_in_folder, rmdir_func, get_csv_info
+from service.common.common_service import rmdir_func, get_csv_info
 from service.ini.ini_service import get_ini_value
-from service.process.liplus_process.get.file_get import LiplusFileGet
-from service.remote.remote_service import remote_check_path_by_sshkey
 from service.remote.ssh_manager import SSHManager
-from service.sevenzip.sevenzip_service import unzip
+from service.zip.sevenzip_service import unzip, isExist7zip
 
 
 class LiplusFileTransfer:
@@ -57,7 +57,7 @@ class LiplusFileTransfer:
             #
             # 	call %CURRENT_DIR%script\LiplusTransfer_Tool.bat %%i %%j "%%k" %CURRENT_DIR%
 
-            self.liplus_transfer_tool(elem.get('toolid'), elem.get('ldb_dir'), elem.get('reg_folder'))
+            self._liplus_transfer_tool(elem.get('toolid'), elem.get('ldb_dir'), elem.get('reg_folder'))
 
         # Processing End Time
         processing_end_time = time.time()
@@ -67,7 +67,7 @@ class LiplusFileTransfer:
         logger_header = f"[{self.toolid}]"
         self.logger.info(f"{logger_header} Total time for the transfer process:{processing_time :.2f}[sec] ")
 
-    def liplus_transfer_tool(self, toolid, ldb_dir, reg_folder):
+    def _liplus_transfer_tool(self, toolid, ldb_dir, reg_folder):
         self.toolid = toolid  # 装置名 (MachineName)
         self.ldb_dir = ldb_dir  # LiplusDBサーバのデータ転送先 (LiplusDB transfer target. *[CSV 5th column])
         self.reg_folder = reg_folder  # 正規フォルダパス (* Liplus Data Download Folder)
@@ -83,7 +83,7 @@ class LiplusFileTransfer:
         ldb_user = get_ini_value(config_ini, "LIPLUS", "LIPLUS_LDB_USER")
 
         # Liplus Data Download Folder
-        if reg_folder == "":
+        if reg_folder == "" or pd.isna(reg_folder):
             self.reg_folder = LIPLUS_REG_FOLDER_DEFAULT + "/" + self.toolid
 
         # rem debug --------------
@@ -96,7 +96,7 @@ class LiplusFileTransfer:
             self.logger.warn(f"{logger_header} f{reg_folder} folder not found")
             return
 
-        # ssh folder check
+        # ssh target folder check
         try:
             ssh_client = SSHManager(self.logger)
             ssh_client.create_ssh_client(ip=remote_liplus_ip, username=ldb_user, sshkey_path=self.sshkey_path)
@@ -112,12 +112,10 @@ class LiplusFileTransfer:
         list_dir = os.listdir(self.reg_folder)
         list_dir_sep = "\n".join(list_dir)
         self.logger.info(f"{logger_header} dir '{self.reg_folder}' : {list_dir}")
-        self.write_to_file(f"{liplus_transfer_log_path}/list_{self.pno}.txt", list_dir_sep)
+        self._write_to_file(f"{liplus_transfer_log_path}/list_{self.pno}.txt", list_dir_sep)
 
         # Check 7zip
-        check7zip = subprocess.call(['7z', "i"], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
-        if check7zip != 0:
-            self.logger.error(f"{logger_header} errorcode:1001 msg:7Zip command does not exist.")
+        if isExist7zip(self.logger) != 0:
             return
 
         for filename in list_dir:
@@ -171,6 +169,6 @@ class LiplusFileTransfer:
 
         self.logger.info(f"{logger_header} LiplusTransfer_Tool Finished")
 
-    def write_to_file(self, file_name, content):
+    def _write_to_file(self, file_name, content):
         with open(file_name, 'w') as log_file:
             log_file.write(content)

@@ -1,10 +1,7 @@
-import json
 import os
 import time
-
-import pandas as pd
 import requests
-import urllib3
+import subprocess
 
 from config.app_config import D_SUCCESS, D_ERROR
 
@@ -12,7 +9,6 @@ from config.app_config import D_SUCCESS, D_ERROR
 def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep):
     rtn = D_ERROR
 
-    # REM *** 定期収集ファイルダウンロード *****************************
     # 정기 수집 파일 다운로드
     for _ in range(retry_max):
         rtn = _request_inner(url, fname, timeout, twofactor)
@@ -23,6 +19,7 @@ def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep)
             time.sleep(retry_sleep)
 
     return rtn
+
 
 def esp_upload(logger, url, heaer, file, fname, timeout, twofactor, retry_max, retry_sleep):
     rtn = D_ERROR
@@ -35,13 +32,15 @@ def esp_upload(logger, url, heaer, file, fname, timeout, twofactor, retry_max, r
             logger.warn(f"Upload Failed. {fname}.")
             time.sleep(retry_sleep)
 
+
 def _request_multipart(url, header, file, fname, timeout, twofactor):
     try:
         if len(twofactor):
             verify = twofactor["cacert"]
             cert = (twofactor["cert"], twofactor["key"])
             connect_read_timeout = (timeout, None)
-            res = requests.post(url, header=header, files=None, timeout=connect_read_timeout, stream=True, verify=verify, cert=cert)
+            res = requests.post(url, header=header, files=None, timeout=connect_read_timeout, stream=True,
+                                verify=verify, cert=cert)
         else:
             connect_read_timeout = (timeout, None)
             response = requests.get(url, timeout=connect_read_timeout, stream=True)
@@ -61,14 +60,8 @@ def _request_multipart(url, header, file, fname, timeout, twofactor):
     # )
     return D_SUCCESS
 
+
 def _request_inner(url, fname, timeout, twofactor):
-    """
-    request共通処理 (旧RapidのためにHTTPSの場合はHTTPSでTry->SSLErrorだけHTTPでもう一回Tryする。
-
-    20230331 : Add Connection Error Retry
-
-    :return: response, raise
-    """
     try:
         if len(twofactor):
             verify = twofactor["cacert"]
@@ -104,3 +97,28 @@ def _request_inner(url, fname, timeout, twofactor):
         return D_ERROR
 
     return D_SUCCESS
+
+
+# subprocess
+def esp_download_subprocess(logger, download_cmd, retry_max, retry_sleep):
+    rtn = D_ERROR
+    for _ in range(retry_max):
+        rtn = subprocess_run(logger, download_cmd)
+        if rtn == 0:  # if download success, subprocess 0 returned.
+            rtn = D_SUCCESS
+            break
+        else:
+            logger.warn(f"Executed retry of file collection from ESP")
+            time.sleep(retry_sleep)
+
+    return rtn
+
+
+def subprocess_run(logger, cmd):
+    try:
+        _subprocess = subprocess.run(cmd, stdout=subprocess.PIPE)
+        ret = _subprocess.returncode
+        return ret
+    except Exception as ex:
+        logger.warn(f"subprocess run unknown error. {ex}")
+        return D_ERROR

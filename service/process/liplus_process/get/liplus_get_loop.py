@@ -55,5 +55,3 @@ if __name__ == '__main__':
     logger = log.FileLogger("LIPLUS_GET", log.Setting(logger_path))
 
     liplus_get_loop(logger, "LIPLUS", "GET", pno)
-
-

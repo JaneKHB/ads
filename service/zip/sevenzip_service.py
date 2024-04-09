@@ -2,6 +2,16 @@ import subprocess
 
 
 # subprocess
+def isExist7zip(logger):
+    check7zip = subprocess.run(['7z', "i"], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
+    ret = check7zip.returncode
+    if ret != 0:
+        logger.error("errorcode:1001 msg:7Zip command does not exist.")
+
+    return ret
+
+
+# subprocess
 def unzip(logger, unzip_cmd):
     # ex) unzip_cmd = [7z', 'x', '-aoa', f'-o{folder}', {file}]
     try:
@@ -18,6 +28,6 @@ def unzip(logger, unzip_cmd):
         return -1
 
 
-# sevenzip package
+# zip package
 def unzip_from_7zip():
     print("")

@@ -12,19 +12,18 @@ import os
 import shutil
 import subprocess
 import time
+import pandas as pd
 from typing import Union
 
-import pandas as pd
-
 from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
-    LIPLUS_CURRENT_DIR, LIPLUS_TOOL_CSV, LIPLUS_TOOL_INFO_HEADER_7, LIPLUS_TOOL_DATA_TYPE_7, LIPLUS_TOOL_INFO_HEADER, \
-    LIPLUS_TOOL_DATA_TYPE, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH
+    LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH
 from service.capa.capa_service import check_capacity
 from service.common.common_service import check_unknown, rmdir_func, get_csv_info
-from service.http.request import esp_download
+from service.remote.remote_service import isExistWget
+from service.remote.request import esp_download
 from service.ini.ini_service import get_ini_value
 from service.security.security_service import security_info
-from service.sevenzip.sevenzip_service import unzip
+from service.zip.sevenzip_service import unzip, isExist7zip
 
 
 class LiplusFileGet:
@@ -75,7 +74,7 @@ class LiplusFileGet:
             # 	rem	--------------------------------------------------------------
             # 	call %CURRENT_DIR%script\LiplusGet_Tool.bat %%i %%j %%k %%l %%m %%n "%%o" %CURRENT_DIR%
 
-            self.liplus_get_tool(elem.get('ca_name'), elem.get('toolid'), elem.get('espaddr'), elem.get('cntlmt'),
+            self._liplus_get_tool(elem.get('ca_name'), elem.get('toolid'), elem.get('espaddr'), elem.get('cntlmt'),
                                  elem.get('userid'), elem.get('userpasswd'), elem.get('reg_folder'))
 
         # Processing End Time
@@ -86,7 +85,7 @@ class LiplusFileGet:
         logger_header = f"[{self.toolid}]"
         self.logger.info(f"{logger_header} Total time for the collection process:{processing_time :.2f}[sec] ")
 
-    def liplus_get_tool(self, ca_name, toolid, espaddr, cntlmt, userid, userpasswd, reg_folder):
+    def _liplus_get_tool(self, ca_name, toolid, espaddr, cntlmt, userid, userpasswd, reg_folder):
         self.ca_name = ca_name
         self.toolid = toolid  # 装置名 (MachineName)
         self.espaddr = espaddr  # 接続先ESPアドレス (ESP Address)
@@ -94,12 +93,12 @@ class LiplusFileGet:
         self.userid = userid  # ユーザID (User Id)
         self.userpasswd = userpasswd  # ユーザパスワード (User Password)
 
-        logger_header = f"[{self.toolid}]"
-        liplus_get_log_path = os.path.dirname(FILE_LOG_LIPLUS_GET_PATH.format(f"_{self.pno}"))
-        self.logger.info(f"{logger_header} liplus_get_tool start!!")
-
         protocol = "http"
         time_second = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
+        liplus_get_log_path = os.path.dirname(FILE_LOG_LIPLUS_GET_PATH.format(f"_{self.pno}"))
+
+        logger_header = f"[{self.toolid}]"
+        self.logger.info(f"{logger_header} liplus_get_tool start!!")
 
         # Liplus Data Download Folder
         if reg_folder == "" or pd.isna(reg_folder):
@@ -109,15 +108,11 @@ class LiplusFileGet:
         reg_folder_tmp = LIPLUS_REG_FOLDER_TMP + "/" + f"{self.toolid}_Get"
 
         # Check wget
-        checkWget = subprocess.call(['wget', '-V'], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
-        if checkWget != 0:
-            self.logger.error(f"{logger_header} errorcode:1000 msg:Wget command does not exist.")
+        if isExistWget(self.logger) != 0:
             return
 
         # Check 7zip
-        check7zip = subprocess.call(['7z', "i"], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
-        if check7zip != 0:
-            self.logger.error(f"{logger_header} errorcode:1001 msg:7Zip command does not exist.")
+        if isExist7zip(self.logger) != 0:
             return
 
         # Make Liplus Data temp Folder
@@ -148,8 +143,8 @@ class LiplusFileGet:
         url_folder_path = liplus_get_log_path + "/" + f"get_url_{self.pno}"
         os.makedirs(url_folder_path, exist_ok=True)
 
-        self.write_to_file(f"{url_folder_path}/{self.toolid}_DL.txt", base_url)
-        self.write_to_file(f"{url_folder_path}/{self.toolid}_NXT.txt", next_url)
+        self._write_to_file(f"{url_folder_path}/{self.toolid}_DL.txt", base_url)
+        self._write_to_file(f"{url_folder_path}/{self.toolid}_NXT.txt", next_url)
 
         # Loop Start
         for i in range(self.cntlmt):
@@ -236,7 +231,6 @@ class LiplusFileGet:
 
         self.logger.info(f"{logger_header} LiplusGet_Tool Finished")
 
-
-    def write_to_file(self, file_name, content):
+    def _write_to_file(self, file_name, content):
         with open(file_name, 'w') as log_file:
             log_file.write(content)
