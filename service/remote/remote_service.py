@@ -3,7 +3,7 @@ import os
 from sys import platform
 
 from config.app_config import D_ERROR, D_SUCCESS
-from smb.SMBConnection import SMBConnection
+# from smb.SMBConnection import SMBConnection
 
 
 def remote_check_folder(logger, remote_folder):
@@ -13,6 +13,7 @@ def remote_check_folder(logger, remote_folder):
 
     return D_SUCCESS
 
+    # khb. todo. 리눅스에 패키지(pysmb) 설치 고려해야함.
     # # SMB 연결 설정
     # try:
     #     conn = SMBConnection(remote_user, remote_password, "local_name", remote_host, use_ntlm_v2=True)
@@ -78,8 +79,12 @@ def remote_scp_send_files(sshkey_path, source_folder, user, ip, dir):
 
 
 def isExistWget(logger):
-    checkWget = subprocess.run(['wget', '-V'], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
-    ret = checkWget.returncode
+    # khb. FIXME. ['wget', '-V'] 사용 시, Windows 에서는 returncode 0, Linux 에서는 returncode 1.
+    # Array 가 아닌 String 으로 수정 ['wget', '-V'] => 'wget -V'
+    check_cmd = 'wget -V'
+    check_wget = subprocess.run(check_cmd, stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
+
+    ret = check_wget.returncode
     if ret != 0:
         logger.error("errorcode:1000 msg:Wget command does not exist.")
 

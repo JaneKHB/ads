@@ -105,6 +105,10 @@ if __name__ == '__main__':
     makedir(liplus_get_cnt, liplus_transfer_cnt)
 
     # run subprocess
+    # khb FIXME. 서브프로세스로 "python xx.py" 를 실행시킬 시, ModuleNotFoundError 에러 발생. 해결방안 검토 중
+    # 검토 방안(1안으로 진행)
+    # 1. 서브 프로세스로 ['python', './service/...../liplus_get_loop.py 1' 실행(기존방식) + PYTHONPATH 환경변수 세팅("/ADS/appsrc")
+    # 2. 서브 프로세스로 ['python', '-m', 'service.process.liplus_process.get.liplus_get_loop 1'] 실행(-m 옵션: 모듈을 스크립트로 실행)
     RunSubProcess("./service/process/proc_fdt_download.py", get_ini_value(config_ini, "GLOBAL", "EEC_DOWNLOAD_ENABLE"))
     RunSubProcess("./service/process/proc_fdt_deploy.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
     RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
