@@ -10,10 +10,10 @@
 import datetime
 import os
 import shutil
-import subprocess
 import time
 import pandas as pd
 from typing import Union
+from pathlib import Path
 
 from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
     LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH
@@ -52,6 +52,8 @@ class LiplusFileGet:
         self.securitykey_path = get_ini_value(config_ini, "SECURITY", "SECURITYKEY_PATH")
         self.twofactor = {}
 
+        self.logger_header = ""
+
     def start(self):
         # Capacity Check
         if not check_capacity("LiplusGet"):
@@ -82,8 +84,8 @@ class LiplusFileGet:
         processing_time = processing_end_time - processing_start_time
 
         # Processing Time logging
-        logger_header = f"[{self.toolid}]"
-        self.logger.info(f"{logger_header} Total time for the collection process:{processing_time :.2f}[sec] ")
+        self.logger_header = f"[{self.toolid}]"
+        self.logger.info(f"{self.logger_header} Total time for the collection process:{processing_time :.2f}[sec] ")
 
     def _liplus_get_tool(self, ca_name, toolid, espaddr, cntlmt, userid, userpasswd, reg_folder):
         self.ca_name = ca_name
@@ -97,8 +99,8 @@ class LiplusFileGet:
         time_second = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
         liplus_get_log_path = os.path.dirname(FILE_LOG_LIPLUS_GET_PATH.format(f"_{self.pno}"))
 
-        logger_header = f"[{self.toolid}]"
-        self.logger.info(f"{logger_header} liplus_get_tool start!!")
+        self.logger_header = f"[{self.toolid}]"
+        self.logger.info(f"{self.logger_header} liplus_get_tool start!!")
 
         # Liplus Data Download Folder
         if reg_folder == "" or pd.isna(reg_folder):
@@ -117,12 +119,12 @@ class LiplusFileGet:
 
         # Make Liplus Data temp Folder
         if not os.path.exists(reg_folder_tmp):
-            self.logger.info(f"{logger_header} mkdir reg_folder_tmp '{reg_folder_tmp}'")
+            self.logger.info(f"{self.logger_header} mkdir reg_folder_tmp '{reg_folder_tmp}'")
             os.makedirs(reg_folder_tmp)
 
         # Make Liplus Data Download Folder
         if not os.path.exists(self.reg_folder):
-            self.logger.info(f"{logger_header} mkdir reg_folder '{self.reg_folder}'")
+            self.logger.info(f"{self.logger_header} mkdir reg_folder '{self.reg_folder}'")
             os.makedirs(self.reg_folder)
 
         # Check two Factor Auth
@@ -156,14 +158,14 @@ class LiplusFileGet:
             # Call collection files download url
             download_start_time = time.time()
 
-            self.logger.info(f"{logger_header} download URL : {base_url}")
+            self.logger.info(f"{self.logger_header} download URL : {base_url}")
             rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
 
             # If File Download fail after retrying, Loop End
             if rtn == D_SUCCESS:
-                self.logger.info(f"{logger_header} download success. got zip file: {fname}")
+                self.logger.info(f"{self.logger_header} download success. got zip file: {fname}")
             else:
-                self.logger.error(f"{logger_header} errorcode:2000 msg:Failed to retry collecting {fname} from ESP")
+                self.logger.error(f"{self.logger_header} errorcode:2000 msg:Failed to retry collecting {fname} from ESP")
                 break
 
             download_end_time = time.time()
@@ -171,10 +173,10 @@ class LiplusFileGet:
 
             # Check File is Last. If Unknown returns, File is last. There are no more files to take.
             if check_unknown(fname):
-                self.logger.info(f"{logger_header} findstr \"Unknown\": true. '{fname}'")
+                self.logger.info(f"{self.logger_header} findstr \"Unknown\": true. '{fname}'")
                 break
             else:
-                self.logger.info(f"{logger_header} findstr \"Unknown\": false. '{fname}'")
+                self.logger.info(f"{self.logger_header} findstr \"Unknown\": false. '{fname}'")
 
             # Unzip Downloaded File
             unzip_start_time = time.time()
@@ -183,36 +185,45 @@ class LiplusFileGet:
 
             # if unzip success, 0 returned.
             if unzip_ret != 0:
-                self.logger.warn(f"{logger_header} The zip file is corrupted.")
+                self.logger.warn(f"{self.logger_header} The zip file is corrupted.")
                 break   # if unzip fail, then loop end
 
             # Unzipping time
             unzip_end_time = time.time()
             unzip_time = unzip_end_time - unzip_start_time
-            self.logger.info(f"{logger_header} Unzipping time of a '{fname}':{unzip_time:.3f}[sec]")
+            self.logger.info(f"{self.logger_header} Unzipping time of a '{fname}':{unzip_time:.3f}[sec]")
 
             # Logging downloaded files
             size_bytes = os.path.getsize(fname)
-            self.logger.info(f"{logger_header} file size = {size_bytes} bytes. '{fname}'")
+            self.logger.info(f"{self.logger_header} file size = {size_bytes} bytes. '{fname}'")
 
             # Call collection files NEXT url
-            self.logger.info(f"{logger_header} NXT URL : {next_url}")
+            self.logger.info(f"{self.logger_header} NXT URL : {next_url}")
             dummy_fname = f"{self.current_dir}dummy_{self.toolid}"
             rtn = esp_download(self.logger, next_url, dummy_fname, time_second, self.twofactor, self.retry_max,
                                self.retry_sleep)
 
             # If File Next fail after retrying, Logging message.
             if rtn == D_SUCCESS:
-                self.logger.info(f"{logger_header} Next Request command success.")
+                self.logger.info(f"{self.logger_header} Next Request command success.")
             else:
-                self.logger.error(f"{logger_header} errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
+                self.logger.error(f"{self.logger_header} errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
+
+            # Delete Dummy File
+            self.logger.info(f"{self.logger_header} dummy file delete start. '{dummy_fname}'")
+
+            dummy_file = Path(dummy_fname)
+            self._delete_dummy_file(dummy_file)
+
+            if dummy_file.exists():
+                self.logger.error(f"{self.logger_header} errorcode:2003 msg:Failed to retry temporary file '{dummy_file}' deletion.")
 
             # Move the Liplus data(zip) to REG_FOLDER.
             shutil.move(fname, self.reg_folder)
 
             # List of files in reg_folder_tmp
             list_dir = os.listdir(reg_folder_tmp)
-            self.logger.info(f"{logger_header} dir '{reg_folder_tmp}' : {list_dir}")
+            self.logger.info(f"{self.logger_header} dir '{reg_folder_tmp}' : {list_dir}")
 
             # khb. fixme: 폴더를 삭제하는 코드가 ADS_1.2에 새로 추가. ADS_1.2 bat(LiplusGet_Tool.bat)에서도 여러개의 파일을 다운로드 받아야하는데 폴더를 미리 삭제해버리면서 에러 발생!
             # Remove reg_folder_tmp
@@ -223,14 +234,30 @@ class LiplusFileGet:
 
         # List of files in reg_folder_tmp
         list_dir = os.listdir(reg_folder_tmp)
-        self.logger.info(f"{logger_header} dir '{reg_folder_tmp}' : {list_dir}")
+        self.logger.info(f"{self.logger_header} dir '{reg_folder_tmp}' : {list_dir}")
 
         # Remove reg_folder_tmp
-        self.logger.info(f"{logger_header} rmdir '{reg_folder_tmp}'")
+        self.logger.info(f"{self.logger_header} rmdir '{reg_folder_tmp}'")
         rmdir_func(self.logger, reg_folder_tmp)
 
-        self.logger.info(f"{logger_header} LiplusGet_Tool Finished")
+        self.logger.info(f"{self.logger_header} LiplusGet_Tool Finished")
 
     def _write_to_file(self, file_name, content):
         with open(file_name, 'w') as log_file:
             log_file.write(content)
+
+    def _delete_dummy_file(self, dummy_file):
+        dummy_file.unlink(missing_ok=True)
+
+        # if dummy file remove fail, retry delete.
+        for i in range(1, self.retry_max + 1):
+            if not dummy_file.exists():
+                break
+
+            self.logger.info(f"{self.logger_header} dummy file delete retry start")
+            self.logger.info(f"{self.logger_header} timeout {self.retry_sleep}")
+
+            dummy_file.unlink(missing_ok=True)
+
+            self.logger.warn(f"{self.logger_header} msg:Executed temporary file deletion retry.")
+            self.logger.info(f"{self.logger_header} delete retry end")
