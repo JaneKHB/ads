@@ -14,6 +14,7 @@ import time
 import pandas as pd
 from typing import Union
 from pathlib import Path
+from sys import platform
 
 from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
     LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH
@@ -181,6 +182,9 @@ class LiplusFileGet:
             # Unzip Downloaded File
             unzip_start_time = time.time()
             unzip_cmd = ['7z', 'x', '-aoa', f'-o{reg_folder_tmp}', fname]
+            if "linux" in platform:
+                unzip_cmd[0] = '7zz'
+
             unzip_ret = unzip(self.logger, unzip_cmd)
 
             # if unzip success, 0 returned.

@@ -3,7 +3,7 @@ import os
 from sys import platform
 
 from config.app_config import D_ERROR, D_SUCCESS
-# from smb.SMBConnection import SMBConnection
+from smb.SMBConnection import SMBConnection
 
 
 def remote_check_folder(logger, remote_folder):

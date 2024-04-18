@@ -1,9 +1,13 @@
 import subprocess
-
+from sys import platform
 
 # subprocess
 def isExist7zip(logger):
-    check7zip = subprocess.run(['7z', "i"], stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
+    check_cmd = ['7z', "i"]
+    if "linux" in platform:
+        check_cmd[0] = '7zz'
+
+    check7zip = subprocess.run(check_cmd, stdin=None, stdout=subprocess.DEVNULL, stderr=None, shell=True)
     ret = check7zip.returncode
     if ret != 0:
         logger.error("errorcode:1001 msg:7Zip command does not exist.")
