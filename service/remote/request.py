@@ -116,7 +116,7 @@ def esp_download_subprocess(logger, download_cmd, retry_max, retry_sleep):
 
 def subprocess_run(logger, cmd):
     try:
-        _subprocess = subprocess.run(cmd, stdout=subprocess.PIPE)
+        _subprocess = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True)
         ret = _subprocess.returncode
         return ret
     except Exception as ex:

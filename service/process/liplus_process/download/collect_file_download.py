@@ -130,21 +130,25 @@ class CollectFileDownload:
         self.result_file.unlink(missing_ok=True)
         self.download_file.unlink(missing_ok=True)
 
-        download_command = [
-            "wget"
-            , url
-            , "-d"
-            , "-o"
-            , str(self.result_file.absolute())
-            , "-O"
-            , str(self.download_file.absolute())
-            , "-c"
-            , "-t"
-            , "1"
-            , "-T"
-            , str(self.timeout_second)
-            # , self.twofactor
-        ]
+        # khb. FIXME. subprocess wget request 시, cmd 로 Array 를 사용하면 동작 에러 발생(원인 파악 X. 리턴코드 = 1 or 3 or 4..)
+        # khb. FIXME. 해당 기능(wget) 에 대해서는 Array 가 아닌 String 으로 처리한다.
+        # download_command = [
+        #     "wget"
+        #     , url
+        #     , "-d"
+        #     , "-o"
+        #     , str(self.result_file.absolute())
+        #     , "-O"
+        #     , str(self.download_file.absolute())
+        #     , "-c"
+        #     , "-t"
+        #     , "1"
+        #     , "-T"
+        #     , str(self.timeout_second)
+        #     # , self.twofactor
+        # ]
+        download_command = f'wget "{url}" -d -o {str(self.result_file.absolute())} -O {str(self.download_file.absolute())} -c -t 1 -T {str(self.timeout_second)}'
+        print(download_command)
 
         # ** Use wget "subprocess" to find file-name in "result.tmp".
         # if it is an abnormal URL, "result.tmp", "tmp_download.zip" is created. "tmp_downlozd.zip" is blank file.
@@ -339,19 +343,23 @@ class CollectFileDownload:
         self.logger.info(f"next url : {next_url}")
 
         result_path = Path(self.reg_folder.absolute(), "result.tmp")
-        download_next_command = [
-            "wget"
-            , "--spider"
-            , next_url
-            , "-d"
-            , "-o"
-            , result_path.absolute()
-            , "-t"
-            , "1"
-            , "-T"
-            , str(self.timeout_second)
-            # , self.twofactor
-        ]
+
+        # khb. FIXME. subprocess wget request 시, cmd 로 Array 를 사용하면 동작 에러 발생(원인 파악 X. 리턴코드 = 1 or 3 or 4..)
+        # khb. FIXME. 해당 기능(wget) 에 대해서는 Array 가 아닌 String 으로 처리한다.
+        # download_next_command = [
+        #     "wget"
+        #     , "--spider"
+        #     , next_url
+        #     , "-d"
+        #     , "-o"
+        #     , result_path.absolute()
+        #     , "-t"
+        #     , "1"
+        #     , "-T"
+        #     , str(self.timeout_second)
+        #     # , self.twofactor
+        # ]
+        download_next_command = f'wget --spider "{next_url}" -d -o {result_path.absolute()} -t 1 -T {str(self.timeout_second)}'
 
         self.logger.info(f"wget next command : {download_next_command}")
         download_ret = subprocess_run(self.logger, download_next_command)

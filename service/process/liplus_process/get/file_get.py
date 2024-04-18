@@ -182,8 +182,12 @@ class LiplusFileGet:
             # Unzip Downloaded File
             unzip_start_time = time.time()
             unzip_cmd = ['7z', 'x', '-aoa', f'-o{reg_folder_tmp}', fname]
+
+            # khb. FIXME. 7zip 명령어(array)를 linux 에서 사용 시, 압축이 풀리지 않는 현상 발생(x 옵션이 아닌 -h 옵션이 적용되는것같음)
+            # khb. FIXME. 해당 기능(7zz x -aoa ...) 에 대해서는 Array 가 아닌 String 으로 처리한다.
             if "linux" in platform:
                 unzip_cmd[0] = '7zz'
+                unzip_cmd = " ".join(unzip_cmd)
 
             unzip_ret = unzip(self.logger, unzip_cmd)
 

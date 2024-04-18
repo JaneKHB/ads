@@ -10,6 +10,7 @@ import util.time_util as time_util
 
 from pathlib import Path
 from service.ini.ini_service import get_ini_value
+from sys import platform
 
 
 def check_unknown(fname):
@@ -109,12 +110,18 @@ def create_ulfile_tmp(file_path, boundary):
     if file_tmp.exists():
         file_tmp.unlink(missing_ok=True)
 
-    content_head = f'--{boundary}\n' \
-                   f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(file)}"\n' \
-                   f'Content-Type: multipart/form-data\n' \
-                   f'\n'
-    content_tail = f'\n' \
-                   f'--{boundary}--\n'
+    # khb. fixme. "\n" 만 사용해서 만들어지는 tmp 파일은 리눅스에서는 wget post 명령어 사용 시에 에러 발생
+    # khb. fixme. os 에 따른 crlf 처리 필요(windows: \n, linux : \r\n)
+    crlf = "\n"
+    if "linux" in platform:
+        crlf = "\r\n"
+
+    content_head = f'--{boundary}{crlf}' \
+                   f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(file)}"{crlf}' \
+                   f'Content-Type: multipart/form-data{crlf}' \
+                   f'{crlf}'
+    content_tail = f'{crlf}' \
+                   f'--{boundary}--{crlf}'
     with open(file_tmp.absolute(), "w") as f, open(file_path.absolute(), 'r') as f_tmp:
         f.write(content_head)
         f.write(f_tmp.read())
