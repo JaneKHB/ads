@@ -18,6 +18,7 @@ import config.app_config as config
 import util.time_util as time_util
 
 from pathlib import Path
+from sys import platform
 
 from service.capa.capa_service import check_capacity
 from service.ini.ini_service import get_ini_value
@@ -258,6 +259,12 @@ class CollectFileDownload:
                     # Unzip File
                     unzip_start_time = time.time()
                     unzip_cmd = ["7z", "x", "-aoa", f"-o{unzip_dir.absolute()}", str(zip_fullpath)]
+                    # khb. FIXME. 7zip 명령어(array)를 linux 에서 사용 시, 압축이 풀리지 않는 현상 발생(x 옵션이 아닌 -h 옵션이 적용되는것같음)
+                    # khb. FIXME. 해당 기능(7zz x -aoa ...) 에 대해서는 Array 가 아닌 String 으로 처리한다.
+                    if "linux" in platform:
+                        unzip_cmd[0] = '7zz'
+                        unzip_cmd = " ".join(unzip_cmd)
+
                     unzip_ret = unzip(self.logger, unzip_cmd)
 
                     # Unzipping time

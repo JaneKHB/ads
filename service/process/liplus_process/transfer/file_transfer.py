@@ -13,6 +13,7 @@ import time
 import pandas as pd
 
 from typing import Union
+from sys import platform
 
 from config.app_config import LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
     FILE_LOG_LIPLUS_TRANSFER_PATH
@@ -125,6 +126,13 @@ class LiplusFileTransfer:
             # Unzip File
             unzip_start_time = time.time()
             unzip_cmd = ['7z', 'x', '-aoa', f'-o{unzip_dir}', file]
+
+            # khb. FIXME. 7zip 명령어(array)를 linux 에서 사용 시, 압축이 풀리지 않는 현상 발생(x 옵션이 아닌 -h 옵션이 적용되는것같음)
+            # khb. FIXME. 해당 기능(7zz x -aoa ...) 에 대해서는 Array 가 아닌 String 으로 처리한다.
+            if "linux" in platform:
+                unzip_cmd[0] = '7zz'
+                unzip_cmd = " ".join(unzip_cmd)
+
             unzip_ret = unzip(self.logger, unzip_cmd)
 
             # if unzip success, 0 returned.

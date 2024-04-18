@@ -32,7 +32,7 @@ def SignalHandler(signum, frame):
 
     print(f"[main] 시그널 {signal_name} 을 수신했습니다.")
 
-    if str(signal_name) == "SIGINT" or str(signal_name) == "SIGTERM":
+    if str(signal_name) == "SIGINT" or str(signal_name) == "SIGTERM" or signum == 2 or signum == 15:
         global exit_flag
         exit_flag = True
 
@@ -44,8 +44,7 @@ def RunSubProcess(script_path, enable_value, pno: Union[int, None]=None):
             subprocess_arr.append(process)
         else:
             for i in range(1, int(pno) + 1):
-                process = subprocess.Popen(["python", script_path, str(i)], stdin=None, stdout=None, stderr=None,
-                                           close_fds=True)
+                process = subprocess.Popen(["python", script_path, str(i)], stdin=None, stdout=None, stderr=None, close_fds=True)
                 subprocess_arr.append(process)
 
 
@@ -55,7 +54,7 @@ def CheckExitFlag():
             WaitSubProcess()
             break  # Exit Main Process
 
-        time.sleep(10)
+        time.sleep(1)
 
 
 def WaitSubProcess():
@@ -113,7 +112,7 @@ if __name__ == '__main__':
     RunSubProcess("./service/process/proc_fdt_deploy.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
     RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
     RunSubProcess("./service/process/liplus_process/get/liplus_get_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"), liplus_get_cnt)
-    RunSubProcess("./service/process/liplus_process/transfer/liplus_transfer_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/transfer/liplus_transfer_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"), liplus_transfer_cnt)
     RunSubProcess("./service/process/liplus_process/download/liplus_download_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_ENABLE"))
     RunSubProcess("./service/process/liplus_process/upload/liplus_upload_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_COLLECTREQUESTFILEUPLOAD_ENABLE"))
 
