@@ -399,14 +399,14 @@ class CollectFileDownload:
             return line
 
         result_tmp_name = Path(f"tmp_result_{datetime.datetime.now().strftime(time_util.TIME_FORMAT_6)}.tmp")
-        with open(self.result_file.absolute(), 'r', encoding='cp949', errors='ignore') as log_file, \
-                open(result_tmp_name.absolute(), 'w', encoding='cp949', errors='ignore') as tmp_file:
+        with open(self.result_file.absolute(), 'r', errors='ignore') as log_file, \
+                open(result_tmp_name.absolute(), 'w', errors='ignore') as tmp_file:
             for line in log_file:
                 decoded_line = decode_url_encoded_chars(line.strip())
                 tmp_file.write(decoded_line + '\n')
 
         # filename=찾아서 뒤에 붙은 파일이름 가져옴.
-        with open(result_tmp_name.absolute(), "r") as tmp_file:
+        with open(result_tmp_name.absolute(), "r", errors='ignore') as tmp_file:
             for line in tmp_file:
                 if "filename=" in line:
                     _, value = line.split("filename=")
