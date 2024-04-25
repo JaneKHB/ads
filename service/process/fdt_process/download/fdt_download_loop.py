@@ -8,34 +8,37 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import time
+import signal
+
 from typing import Union
+
+import service.logger.logger_service as log
+import config.app_config as config
 
 from config.app_config import D_SHUTDOWN, D_PROC_START, D_PROC_ING, D_PROC_END, config_ini, D_SUCCESS, D_REDIS_SHUTDOWN_KEY
 from service.ini.ini_service import get_ini_value
-from service.logger.db_logger_service import DbLogger
 from service.process.fdt_process.download.file_download import FdtFileDownload
 from service.process.fdt_process.download.fpa_trace import FdtFpaTrace
 from service.process.fdt_process.download.move_to_ads2 import FdtMoveToAds2
-from service.redis.redis_service import get_redis_process_status, get_redis_global_status, set_redis_process_status
+
+
+exit_flag = False   # subprocess Exit Flag
+loop_interval = 30   # second
+logger = log.FileLogger("FDT_DOWN", log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
+
+def SignalHandler(signum, frame):
+    signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
+    signal_name = signal_name_map.get(signum, f'Unknown signal ({signum})')
+
+    global exit_flag
+    exit_flag = True
 
 # \ADS\LoopScript\Download_Loop.bat
 def fdt_download_loop(pname, sname, pno: Union[int, None]):
-    logger = DbLogger(pname, sname, pno)
     while True:
-        # Mainが緊急終了状態
-        if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
+        # check Exit Flag
+        if exit_flag:
             break
-
-        # 1Cycleを開始してもいいか確認。
-        # 1Cycle을 시작할 수 있는지 확인.
-        rtn, val = get_redis_process_status(pname, sname, pno)
-        if rtn != D_SUCCESS or val != D_PROC_START:
-            time.sleep(1)
-            continue
-
-        # Process進行中に設定
-        # 프로세스 진행 중 설정
-        set_redis_process_status(pname, sname, pno, D_PROC_ING)
 
         # \ADS\fdt_batch\FileDownload.bat
         obj = FdtFileDownload(logger, pname, sname, pno)
@@ -51,10 +54,10 @@ def fdt_download_loop(pname, sname, pno: Union[int, None]):
             obj = FdtFpaTrace(logger, pname, sname, pno)
             obj.start()
 
-        # Process進行完了を通知
-        # 프로세스 진행 완료 알림
-        set_redis_process_status(pname, sname, pno, D_PROC_END)
-
+        time.sleep(loop_interval)
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, SignalHandler)
+    signal.signal(signal.SIGTERM, SignalHandler)
+
     fdt_download_loop("FDT", "DOWNLOAD", None)

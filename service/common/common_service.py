@@ -160,6 +160,14 @@ def get_csv_info(module, type, pno=0):
         elif type == "TRANSFER":
             pass
     elif module == "FDT":
+        if type == "UPLOAD":
+            pass
+        elif type == "DOWNLOAD":
+            file_path = config.FDT_TOOL_CSV
+            ini_section = module
+            ini_key = "EEC_TOOL_INFO_SKIP_LINE"
+            read_names = config.FDT_TOOL_INFO_HEADER
+            read_dttype = config.FDT_TOOL_DATA_TYPE
         pass
 
     skiprows = int(get_ini_value(config.config_ini, ini_section, ini_key))

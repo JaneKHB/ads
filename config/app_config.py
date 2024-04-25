@@ -18,23 +18,26 @@ config_ini = "/ADS/appsrc/config/config.ini"
 devlog_dir = "/ADS/devlog"
 
 CURRENT_PATH = "/ADS/"
+CONFIG_PATH = "/ADSconfiguration/"
+
+ORIGINAL_SOURCE_PATH = CONFIG_PATH + "appsrc/"
 
 CHECK_CAPA_DRIVE = CURRENT_PATH
-CHECK_CAPA_CURRENT_DIR = "/ADS/Capacity_Check/"
+CHECK_CAPA_CURRENT_DIR = CURRENT_PATH + "Capacity_Check/"
 CHECK_CAPA_LIMIT_PERCENT = 5
 
-CSV_ORIGINAL_PATH = "/ADS/originalcsv"
-CSV_REAL_PATH = "/ADS/csv/"
+CSV_ORIGINAL_PATH = CONFIG_PATH + "originalcsv/"
+CSV_REAL_PATH = CURRENT_PATH + "csv/"
 
 # FDT path
 FDT_TOOL_CSV = CSV_REAL_PATH + "ToolInfo.csv"
 FDT_UPTOOL_CSV = CSV_REAL_PATH + "UpToolInfo.csv"
-FDT_CURRENT_DIR = "/ADS/fdt_batch/"
+FDT_CURRENT_DIR = CURRENT_PATH + "fdt_batch/"
 
 FDT_ADS2_FOLDER = "/ADS/LOG/temp"
 FDT_ADS2_UPLOAD = "/ADS/LOG/Upload"
 
-FDT_FCS_HOME = "/ADS/fcs"
+FDT_FCS_HOME = CURRENT_PATH + "fcs/"
 FDT_MOVEINORDEROFOLDNESSPATH = "/ADS/MoveInOrderOfOldness.jar"
 
 FDT_FPA_TRACE_REG_FOLDER = "/ADS/var/fpatrace"
@@ -43,16 +46,16 @@ FDT_UP_CURRENT_DIR = "/ADS/UploadBatch/"
 FDT_UP_DIR = "/ADS/FSLOG/uploads"
 
 # Liplus path
-LIPLUS_CURRENT_DIR = "/ADS/Liplus_batch/"
-LIPLUS_DOWNLOAD_CURRENT_DIR = "/ADS/OnDemandCollectDownload/"
-LIPLUS_UPLOAD_CURRENT_DIR = "/ADS/CollectRequestFileUpload/"
-LIPLUS_ONDEMAND_DIR = "/ADS/ondemand/"
-LIPLUS_REG_FOLDER_DEFAULT = "/ADS/Liplus_LOG"
-LIPLUS_REG_FOLDER_TMP = "/ADS/Liplus_TMP"
+LIPLUS_CURRENT_DIR = CURRENT_PATH + "Liplus_batch/"
+LIPLUS_DOWNLOAD_CURRENT_DIR = CURRENT_PATH + "OnDemandCollectDownload/"
+LIPLUS_UPLOAD_CURRENT_DIR = CURRENT_PATH + "CollectRequestFileUpload/"
+LIPLUS_ONDEMAND_DIR = CURRENT_PATH + "ondemand/"
+LIPLUS_REG_FOLDER_DEFAULT = CURRENT_PATH + "Liplus_LOG/"
+LIPLUS_REG_FOLDER_TMP = CURRENT_PATH + "Liplus_TMP/"
 
-LIPLUS_TOOL_CSV = "/ADS/csv/LiplusToolInfo{}.csv"
-LIPLUS_DOWNLOAD_INFO_CSV = "/ADS/csv/DownloadInfo.csv"
-LIPLUS_UPLOAD_INFO_CSV = "/ADS/csv/UploadInfo.csv"
+LIPLUS_TOOL_CSV = CSV_REAL_PATH + "LiplusToolInfo{}.csv"
+LIPLUS_DOWNLOAD_INFO_CSV = CSV_REAL_PATH + "DownloadInfo.csv"
+LIPLUS_UPLOAD_INFO_CSV = CSV_REAL_PATH + "UploadInfo.csv"
 # ----------------------------------------------
 # ----------------------------------------------
 
@@ -89,7 +92,7 @@ LIPLUS_UPLOAD_DATA_TYPE = {"espaddr": str, "userid": str, "userpasswd": str, "lo
 # ----------------------------------------------
 
 # Security
-SECURITYINFO_PATH = "/ADS/csv/SecurityInfo.csv"
+SECURITYINFO_PATH = CSV_ORIGINAL_PATH + "SecurityInfo.csv"
 
 # ----------------------------------------------
 
@@ -110,16 +113,16 @@ D_REDIS_SHUTDOWN_KEY = "shutdown"
 
 # ----------------------------------------------
 # Filesystem Root
-FS_ROOT = '/ADS/appsrc'
+FS_ROOT = CURRENT_PATH + 'appsrc/'
 PROCESS_SCRIPT = 'process_main.py'
 
 # ----------------------------------------------
 # Log System Settings
 FILE_LOG = 'APP_LOG'
-FILE_LOG_PATH = '/ADS/devlog/'
+FILE_LOG_PATH = CURRENT_PATH + 'devlog/'
+FILE_LOG_LIPLUS_PATH = FILE_LOG_PATH + 'Liplus/'
 FILE_LOG_MAIN_PATH = FILE_LOG_PATH + 'ads_dev_log.log'
 FILE_LOG_SETUP_CSV_PATH = FILE_LOG_PATH + 'setup_csv.log'
-FILE_LOG_LIPLUS_PATH = FILE_LOG_PATH + 'Liplus/'
 FILE_LOG_LIPLUS_GET_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_get{}.log'
 FILE_LOG_LIPLUS_TRANSFER_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_transfer{}.log'
 FILE_LOG_LIPLUS_DOWNLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_download.log'

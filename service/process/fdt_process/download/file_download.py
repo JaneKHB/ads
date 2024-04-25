@@ -15,19 +15,15 @@ from typing import Union
 
 import pandas as pd
 
-from config.app_config import D_SUCCESS, config_ini, FDT_TOOL_INFO_HEADER, FDT_TOOL_DATA_TYPE, FDT_CURRENT_DIR, FDT_TOOL_CSV, SECURITYINFO_PATH, D_SHUTDOWN, \
-    D_REDIS_SHUTDOWN_KEY
-from service.db.db_service import db_file_download_log
+from config.app_config import D_SUCCESS, config_ini, FDT_TOOL_INFO_HEADER, FDT_TOOL_DATA_TYPE, FDT_CURRENT_DIR, FDT_TOOL_CSV, SECURITYINFO_PATH, D_SHUTDOWN, D_UNKNOWN_ERROR_NO, D_REDIS_SHUTDOWN_KEY
 from service.ini.ini_service import get_ini_value
-from service.logger.db_logger_service import DbLogger
-from service.common.common_service import check_unknown
-from service.redis.redis_service import get_redis_global_status
-from service.remote.request import esp_download
+from service.common.common_service import check_unknown, get_csv_info
+from service.http.request import esp_download
 from service.security.security_service import security_info
 
 # \ADS\fdt_batch\FileDownload.bat
 class FdtFileDownload:
-    def __init__(self, logger: DbLogger, pname, sname, pno: Union[int, None]):
+    def __init__(self, logger, pname, sname, pno: Union[int, None]):
         self.logger = logger
         self.pname = pname
         self.sname = sname
@@ -35,7 +31,7 @@ class FdtFileDownload:
 
         self.manual_upload = get_ini_value(config_ini, "EEC", "EEC_MANUAL_UPLOAD")
         self.current_dir = FDT_CURRENT_DIR
-        self.tool_df = FdtFileDownload.get_tool_info(get_ini_value(config_ini, "EEC", "EEC_TOOL_INFO_COM_ERR_SKIP_LINE"))
+        self.tool_df = get_csv_info("FDT", "DOWNLOAD")
 
         self.toolid = None  # 装置名 장치명
         self.espaddr = None  # 接続先ESPアドレス 연결 대상 ESP 주소
@@ -53,21 +49,8 @@ class FdtFileDownload:
         self.securitykey_path = get_ini_value(config_ini, "SECURITY", "SECURITYKEY_PATH")
         self.twofactor = {}
 
-    @staticmethod
-    def get_tool_info(skiprows_str=None):
-        file_path = FDT_TOOL_CSV
-        if skiprows_str is None:
-            skiprows = int(get_ini_value(config_ini, "EEC", "EEC_TOOL_INFO_SKIP_LINE"))
-        else:
-            skiprows = int(skiprows_str)
-        tool_df = pd.read_csv(file_path, names=FDT_TOOL_INFO_HEADER, dtype=FDT_TOOL_DATA_TYPE, encoding='shift_jis', skiprows=skiprows, sep=',', index_col=False)
-        return tool_df
-
     def start(self):
         for _, elem in self.tool_df.iterrows():
-            # Mainが緊急終了状態 긴급 종료 상태
-            if get_redis_global_status(D_REDIS_SHUTDOWN_KEY) == D_SHUTDOWN:
-                break
 
             # PKRFG11,1,10.47.146.63:8080,4,OTST401,10.53.193.13,C:\LOG\Download\PKRFG11,inazawa.wataru,CanonCanon,C:\backup,0
             # 	rem	 1:%%i : 装置名 장치명
@@ -176,7 +159,6 @@ class FdtFileDownload:
             # REM ダウンロードしたファイルのサイズをログ出力する
             # 다운로드한 파일의 크기를 로깅
             size_bytes = os.path.getsize(fname)
-            db_file_download_log(self.pname, self.sname, self.pno, fname, size_bytes, tick_download_end)
             self.logger.info(f"{fname} file size = {size_bytes} bytes")
 
             # REM *** ZIPファイルを削除 ******************************************
