@@ -107,8 +107,8 @@ if __name__ == '__main__':
     makedir(liplus_get_cnt, liplus_transfer_cnt)
 
     # run subprocess
-    # RunSubProcess("./service/process/proc_fdt_download.py", get_ini_value(config_ini, "GLOBAL", "EEC_DOWNLOAD_ENABLE"))
-    # RunSubProcess("./service/process/proc_fdt_deploy.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
+    # RunSubProcess("./service/process/fdt_download_loop.py", get_ini_value(config_ini, "GLOBAL", "EEC_DOWNLOAD_ENABLE"))
+    # RunSubProcess("./service/process/fdt_deploy_loop.py", get_ini_value(config_ini, "GLOBAL", "EEC_DEPLOY_ENABLE"))
     # RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
     RunSubProcess("./service/process/liplus_process/get/liplus_get_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"))
     RunSubProcess("./service/process/liplus_process/transfer/liplus_transfer_loop.py", get_ini_value(config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"))
