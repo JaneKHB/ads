@@ -173,8 +173,7 @@ class CollectFileUpload:
                 self._response_check(result_file.absolute())
 
                 # file_size_logging(self.logger, "up", ulfile.absolute(), self.log_transfer.absolute())
-                file_size_logging(self.logger, "up", ulfile.absolute(),
-                                  Path(self.current_dir, self.log_transfer).absolute())
+                file_size_logging(self.logger, "up", ulfile.absolute())
 
                 # delete file (xml, result.tmp)
                 self.logger.info(f"delete {file_tmp.absolute()}")

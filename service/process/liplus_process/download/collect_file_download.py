@@ -185,7 +185,7 @@ class CollectFileDownload:
                 self.logger.info(f"delete [{self.result_file.absolute()}]")
 
                 # call upload_ok
-                self._upload_ok(url, Path(self.reg_folder.absolute(), collect_file_name))
+                self._upload_ok(url, os.path.join(self.reg_folder.absolute(), collect_file_name))
                 self._end_wget()
                 self._unzip()
                 return
@@ -217,7 +217,7 @@ class CollectFileDownload:
             return
 
         # call upload_ok
-        self._upload_ok(url, Path(self.reg_folder.absolute(), collect_file_name))
+        self._upload_ok(url, os.path.join(self.reg_folder.absolute(), collect_file_name))
         self._end_wget()
         self._unzip()
 
@@ -336,7 +336,7 @@ class CollectFileDownload:
     def _upload_ok(self, url, res_path):
 
         # Logging downloaded files
-        file_size_logging(self.logger, "down", res_path, Path(self.current_dir, self.log_transfer).absolute())
+        file_size_logging(self.logger, "down", res_path)
 
         # Call collection files NEXT url
         next_url = url + "&NEXT=true"

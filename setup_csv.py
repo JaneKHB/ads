@@ -11,7 +11,7 @@ from pathlib import Path
 
 from service.common.common_service import rmtree
 
-logger = log.FileLogger("SETUP_CSV", log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
+logger = log.FileLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
 def dellink(current_dir):
     file = Path(current_dir, "module", "linklist.txt")

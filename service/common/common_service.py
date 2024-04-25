@@ -6,7 +6,7 @@ import zipfile
 
 import pandas as pd
 import config.app_config as config
-import util.time_util as time_util
+import service.logger.logger_service as log
 
 from pathlib import Path
 from service.ini.ini_service import get_ini_value
@@ -88,20 +88,43 @@ def rmdir_func(logger, dir_path):
             return config.D_ERROR
     return config.D_SUCCESS
 
+def file_size_logging(logger, type, file_path, module_id = ""):
 
-def file_size_logging(logger, type, file_path, log_path):
-    logger.info(f"file size logging file : [{file_path}], log : [{log_path}]")
-    log = Path(log_path)
-    if not log.exists():
-        with open(log, "w") as f:
-            f.write("up/down,filename,filesize(MB)\n")
-
+    # 로그경로, 파일 사이즈 초기화
+    log_path = Path(config.FILE_LOG_LIPLUS_FILE_TRANSFER)
     file = Path(file_path)
     if file.exists():
         size_mb = file.stat().st_size / (1024 * 1024)
-        with open(log, "a") as f:
-            f.write(f"{type},{file.absolute()},{size_mb:.2f}\n")
 
+    # 로그 메세지, 헤더 초기화
+    if module_id == "":
+        log_msg = f"{type},{file_path},{size_mb}"
+        header = "time,subprocess_name,up/down,filename,filesize(MB)\n"
+    else:
+        log_msg = f"{type},{module_id},{file_path},{size_mb}"
+        header = "time,subprocess_name,up/down,module_id,filename,filesize(MB)\n"
+
+    file_size_logger = log.FileLogger(logger.name, log.Setting(log_path.absolute(), True))
+
+    with open(log_path.absolute()) as f:
+        first_line = f.readline()
+
+    # 첫 줄이 헤더랑 다를 경우 첫줄에 헤더 넣기
+    if header != first_line:
+        file_size_logger.handlers.clear()
+        with open(log_path.absolute(), "r+") as f:
+            content = f.read()
+            f.truncate(0)
+            f.seek(0)
+            f.write(header)
+            f.write(content)
+        file_size_logger = log.FileLogger(logger.name, log.Setting(log_path.absolute(), True))
+
+    # 로그
+    file_size_logger.info(log_msg)
+
+    # 핸들러 초기화 함으로서 중복 기록 방지
+    file_size_logger.handlers.clear()
 
 def create_ulfile_tmp(file_path, boundary):
     file = Path(file_path)

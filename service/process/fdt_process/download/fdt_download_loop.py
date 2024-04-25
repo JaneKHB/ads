@@ -24,7 +24,7 @@ from service.process.fdt_process.download.move_to_ads2 import FdtMoveToAds2
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 30   # second
-logger = log.FileLogger("FDT_DOWN", log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
+logger = log.FileLogger(config.LOG_NAME_FDT_DOWN, log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}

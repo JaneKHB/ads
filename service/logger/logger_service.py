@@ -7,12 +7,12 @@ class Setting:
         ::
             Setting.LEVEL = logging.INFO # INFO 이상만 로그를 작성
     """
-    def __init__(self, log_path):
+    def __init__(self, log_path, is_file_size_logging = False):
         self.LEVEL = logging.INFO
         self.FILENAME = log_path
         self.MAX_BYTES = config.FILE_LOG_MAXBYTE
         self.BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
-        self.FORMAT = config.FILE_LOG_FORMAT
+        self.FORMAT = config.FILE_LOG_FILE_SIZE_FORMAT if is_file_size_logging else config.FILE_LOG_FORMAT
 
 def TimedLogger(name, setting, when="d", interval=1):
     # 로거 & 포매터 & 핸들러 생성
@@ -64,6 +64,7 @@ def FileLogger(name, setting):
     # streamHandler = logging.StreamHandler()
     rotatingHandler = logging.handlers.RotatingFileHandler(
         filename=setting.FILENAME,
+        maxBytes=setting.MAX_BYTES,
         backupCount=setting.BACKUP_COUNT)
 
     # 핸들러 & 포매터 결합
