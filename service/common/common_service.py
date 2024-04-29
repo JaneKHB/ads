@@ -97,12 +97,8 @@ def file_size_logging(logger, type, file_path, module_id = ""):
         size_mb = file.stat().st_size / (1024 * 1024)
 
     # 로그 메세지, 헤더 초기화
-    if module_id == "":
-        log_msg = f"{type},{file_path},{size_mb}"
-        header = "time,subprocess_name,up/down,filename,filesize(MB)\n"
-    else:
-        log_msg = f"{type},{module_id},{file_path},{size_mb}"
-        header = "time,subprocess_name,up/down,module_id,filename,filesize(MB)\n"
+    log_msg = f"{type},{module_id},{file_path},{size_mb}"
+    header = "time,subprocess_name,up/down,module_id,filename,filesize(MB)\n"
 
     file_size_logger = log.FileLogger(logger.name, log.Setting(log_path.absolute(), True))
 
