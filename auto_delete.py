@@ -30,12 +30,6 @@ def delete_file(target_path, storage_period):
 
 def run(target_path, storage_period, time_interval):
 
-    print(target_path)
-    print(storage_period)
-    print(time_interval)
-
-    return
-
     if target_path is None:
         return
 

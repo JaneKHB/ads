@@ -11,7 +11,7 @@ from pathlib import Path
 
 from service.common.common_service import rmtree
 
-logger = log.FileLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
+logger = None#log.FileLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
 def dellink(current_dir):
     file = Path(current_dir, "module", "linklist.txt")
@@ -504,6 +504,14 @@ def setup_csv():
     logger.info(f"make dir [{ondemand.absolute()}]")
 
 if __name__ == '__main__':
+
+    log_path = Path(config.FILE_LOG_SETUP_CSV_PATH)
+
+    if not log_path.parent.exists():
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logger = log.FileLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
+
     logger.info("--------------------START SETUP CSV--------------------")
     setup_csv()
     logger.info("---------------------END SETUP CSV---------------------")
