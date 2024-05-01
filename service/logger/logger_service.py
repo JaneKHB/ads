@@ -14,7 +14,7 @@ class Setting:
         self.BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
         self.FORMAT = config.FILE_LOG_FILE_SIZE_FORMAT if is_file_size_logging else config.FILE_LOG_FORMAT
 
-def TimedLogger(name, setting, when="d", interval=1):
+def TimedLogger(name, setting, when="midnight", interval=1):
     # 로거 & 포매터 & 핸들러 생성
     logger = logging.getLogger(name)
     formatter = logging.Formatter(setting.FORMAT)
@@ -32,7 +32,7 @@ def TimedLogger(name, setting, when="d", interval=1):
         interval=interval,
         filename=setting.FILENAME,
         backupCount=setting.BACKUP_COUNT)
-    rotatingHandler.suffix = config.FILE_LOG_DATEFMT
+    # rotatingHandler.suffix = config.FILE_LOG_DATEFMT
 
     # 핸들러 & 포매터 결합
     # streamHandler.setFormatter(formatter)

@@ -100,7 +100,7 @@ def file_size_logging(logger, type, file_path, module_id = ""):
     log_msg = f"{type},{module_id},{file_path},{size_mb}"
     header = "time,subprocess_name,up/down,module_id,filename,filesize(MB)\n"
 
-    file_size_logger = log.FileLogger(logger.name, log.Setting(log_path.absolute(), True))
+    file_size_logger = log.TimedLogger(logger.name, log.Setting(log_path.absolute(), True))
 
     with open(log_path.absolute()) as f:
         first_line = f.readline()
@@ -114,7 +114,7 @@ def file_size_logging(logger, type, file_path, module_id = ""):
             f.seek(0)
             f.write(header)
             f.write(content)
-        file_size_logger = log.FileLogger(logger.name, log.Setting(log_path.absolute(), True))
+        file_size_logger = log.TimedLogger(logger.name, log.Setting(log_path.absolute(), True))
 
     # 로그
     file_size_logger.info(log_msg)

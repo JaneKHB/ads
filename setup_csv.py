@@ -510,7 +510,7 @@ if __name__ == '__main__':
     if not log_path.parent.exists():
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger = log.FileLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
+    logger = log.TimedLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
     logger.info("--------------------START SETUP CSV--------------------")
     setup_csv()

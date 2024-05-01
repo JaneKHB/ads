@@ -19,7 +19,7 @@ from service.process.liplus_process.upload.collect_file_upload import CollectFil
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.FileLogger(config.LOG_NAME_LIPLUS_UPLOAD, log.Setting(config.FILE_LOG_LIPLUS_UPLOAD_PATH))
+logger = log.TimedLogger(config.LOG_NAME_LIPLUS_UPLOAD, log.Setting(config.FILE_LOG_LIPLUS_UPLOAD_PATH))
 
 
 def SignalHandler(signum, frame):

@@ -44,6 +44,11 @@ def run(target_path, storage_period, time_interval):
         # 1시간마다 실행
         time.sleep(time_interval)
 
+# subprocess 호출
+# argv[0] -> target path
+# argv[1] -> storage_period
+# argv[2] -> time_interval
+# else
 # argv[1] -> target path
 # argv[2] -> storage_period
 # argv[3] -> time_interval
@@ -56,14 +61,14 @@ if __name__ == '__main__':
     storage_period = 30
     time_interval = 60 * 60
 
-    if len(sys.argv) > 3:
-        target_path = sys.argv[1]
-        storage_period = sys.argv[2]
-        time_interval = sys.argv[3]
-    elif len(sys.argv) > 2:
-        target_path = sys.argv[1]
-        storage_period = sys.argv[2]
+    if len(sys.argv) > 2:
+        target_path = sys.argv[0]
+        storage_period = sys.argv[1]
+        time_interval = sys.argv[2]
     elif len(sys.argv) > 1:
-        target_path = sys.argv[1]
+        target_path = sys.argv[0]
+        storage_period = sys.argv[1]
+    elif len(sys.argv) > 0:
+        target_path = sys.argv[0]
 
     run(target_path, storage_period, time_interval)
