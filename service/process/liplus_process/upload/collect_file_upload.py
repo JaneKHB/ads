@@ -52,7 +52,7 @@ class CollectFileUpload:
         self.twofactor = {}
 
     def start(self):
-        os.makedirs(self.upload_dir.absolute(), exist_ok=True)
+        self.upload_dir.mkdir(exist_ok=True)
 
         for _, elem in self.tool_df.iterrows():
             # Mainが緊急終了状態 긴급 종료 상태

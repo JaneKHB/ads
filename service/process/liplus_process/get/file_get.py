@@ -21,7 +21,7 @@ from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
 from service.capa.capa_service import check_capacity
 from service.common.common_service import check_unknown, rmdir_func, get_csv_info
 from service.remote.remote_service import isExistWget
-from service.remote.request import esp_download
+from service.remote.request import esp_download, subprocess_run
 from service.ini.ini_service import get_ini_value
 from service.security.security_service import security_info
 from service.zip.sevenzip_service import unzip, isExist7zip
@@ -35,7 +35,7 @@ class LiplusFileGet:
         self.pno = pno
 
         self.current_dir = LIPLUS_CURRENT_DIR
-        self.tool_df = get_csv_info("LIPLUS", "TRANSFER", self.pno)
+        self.tool_df = get_csv_info("LIPLUS", "GET", self.pno)
 
         self.ca_name = None
         self.toolid = None  # 装置名 (MachineName)
@@ -96,6 +96,8 @@ class LiplusFileGet:
         self.userid = userid  # ユーザID (User Id)
         self.userpasswd = userpasswd  # ユーザパスワード (User Password)
 
+        debug_log_path = Path(self.current_dir, "devlog", f"{toolid}_debug.log")
+
         protocol = "http"
         time_second = int(get_ini_value(config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
         liplus_get_log_path = os.path.dirname(FILE_LOG_LIPLUS_GET_PATH.format(f"_{self.pno}"))
@@ -142,6 +144,10 @@ class LiplusFileGet:
         base_url = url + "?" + parameter
         next_url = url + "?" + parameter + "&NEXT=1"
 
+        # test
+        # base_url = 'http://10.1.31.163:8081/FileServiceCollectionAgent/Download?USER=inazawa.wataru&PW=CanonCanon&ID=CollectionPlan_C6_AUXCF_PKRF2A1-01'
+        # next_url = base_url + "&NEXT=1"
+
         # Save the download URL as file.
         url_folder_path = liplus_get_log_path + "/" + f"get_url_{self.pno}"
         os.makedirs(url_folder_path, exist_ok=True)
@@ -159,11 +165,21 @@ class LiplusFileGet:
             # Call collection files download url
             download_start_time = time.time()
 
-            self.logger.info(f"{self.logger_header} download URL : {base_url}")
-            rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
+            # self.logger.info(f"{self.logger_header} download URL : {base_url}")
+            # rtn = esp_download(self.logger, base_url, fname, time_second, self.twofactor, self.retry_max, self.retry_sleep)
+
+            command_base = f'wget {base_url} -a {debug_log_path.absolute()} -O {fname} -c -t 2 -T 10'
+            self.logger.info(f"wget command : {command_base}")
+            base_res = subprocess_run(self.logger, command_base)
+
+            if debug_log_path.exists():
+                with open(debug_log_path.absolute(), "r") as f:
+                    read_debug = f.readline()
+                self.logger.info(f"{self.logger_header} {read_debug}")
+                debug_log_path.unlink(missing_ok=True)
 
             # If File Download fail after retrying, Loop End
-            if rtn == D_SUCCESS:
+            if base_res == D_SUCCESS:
                 self.logger.info(f"{self.logger_header} download success. got zip file: {fname}")
             else:
                 self.logger.error(f"{self.logger_header} errorcode:2000 msg:Failed to retry collecting {fname} from ESP")
@@ -208,11 +224,21 @@ class LiplusFileGet:
             # Call collection files NEXT url
             self.logger.info(f"{self.logger_header} NXT URL : {next_url}")
             dummy_fname = f"{self.current_dir}dummy_{self.toolid}"
-            rtn = esp_download(self.logger, next_url, dummy_fname, time_second, self.twofactor, self.retry_max,
-                               self.retry_sleep)
+
+            # rtn = esp_download(self.logger, next_url, dummy_fname, time_second, self.twofactor, self.retry_max,
+            #                    self.retry_sleep)
+            command_next = f'wget {next_url} -a {debug_log_path.absolute()} -O {dummy_fname} -c -t 2 -T 10'
+            self.logger.info(f"wget command : {command_next}")
+            next_res = subprocess_run(self.logger, command_next)
+
+            if debug_log_path.exists():
+                with open(debug_log_path.absolute(), "r") as f:
+                    read_debug = f.readline()
+                self.logger.info(f"{self.logger_header} {read_debug}")
+                debug_log_path.unlink(missing_ok=True)
 
             # If File Next fail after retrying, Logging message.
-            if rtn == D_SUCCESS:
+            if next_res == D_SUCCESS:
                 self.logger.info(f"{self.logger_header} Next Request command success.")
             else:
                 self.logger.error(f"{self.logger_header} errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")

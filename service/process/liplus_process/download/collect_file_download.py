@@ -99,8 +99,8 @@ class CollectFileDownload:
         self.logger.info("liplus_get_tool start!!")
 
         # Make folder
-        os.makedirs(self.reg_folder.absolute(), exist_ok=True)
-        os.makedirs(self.zip_backup_folder.absolute(), exist_ok=True)
+        self.reg_folder.mkdir(exist_ok=True)
+        self.zip_backup_folder.mkdir(exist_ok=True)
 
         # Check wget
         if isExistWget(self.logger) != 0:
