@@ -19,6 +19,7 @@ def isExist7zip(logger):
 def unzip(logger, zip_path, des_path):
 
     try:
+        logger.info(f"unzip use zipfile lib")
         with zipfile.ZipFile(zip_path, "r") as z:
             z.extractall(des_path)
         return True

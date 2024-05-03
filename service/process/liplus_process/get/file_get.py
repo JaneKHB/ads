@@ -147,8 +147,8 @@ class LiplusFileGet:
         next_url = url + "?" + parameter + "&NEXT=1"
 
         # test
-        base_url = 'http://10.4.101.69:8080/FileServiceCollectionAgent/Download?USER=inazawa.wataru&PW=CanonCanon&ID=CollectionPlan_C6_AUXCF_PKRF2A1-01'
-        next_url = base_url + "&NEXT=1"
+        # base_url = 'http://10.4.101.69:8080/FileServiceCollectionAgent/Download?USER=inazawa.wataru&PW=CanonCanon&ID=CollectionPlan_C6_AUXCF_PKRF2A1-01'
+        # next_url = base_url + "&NEXT=1"
 
         # Save the download URL as file.
         url_folder_path = liplus_get_log_path + "/" + f"get_url_{self.pno}"
