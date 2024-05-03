@@ -23,7 +23,7 @@ from pathlib import Path
 
 from service.ini.ini_service import get_ini_value
 from service.remote.remote_service import isExistWget
-from service.remote.request import subprocess_run
+from service.remote.request import request_subprocess, esp_upload
 from service.security.security_service import security_info
 from service.common.common_service import create_ulfile_tmp, file_size_logging, get_csv_info
 
@@ -108,6 +108,7 @@ class CollectFileUpload:
                         # if upload fails, file is not deleted and upload at the next upload time.
                         self.logger.info(f"ERROR:!ERRORLEVEL! Upload failure:{f}")
 
+    # ADS\CollectRequestFileUpload\Upload_Tool.bat
     def _upload_tool(self, espaddr, userid, userpw, file_path):
         result = 0
         protocol = "http"
@@ -127,7 +128,7 @@ class CollectFileUpload:
         rtn, self.twofactor = security_info(self.logger, espaddr, self.securityinfo_path, self.securitykey_path)
         if rtn == config.D_SUCCESS and len(self.twofactor):
             protocol = "https"
-            time_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
+            self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
         elif rtn != config.D_SUCCESS:
             return result
 
@@ -138,8 +139,6 @@ class CollectFileUpload:
                    f"{time_now.strftime(time_util.TIME_FORMAT_6)[:-4]}{random.randrange(0, 32767 + 1)}"
 
         file_tmp = create_ulfile_tmp(ulfile.absolute(), boundary)
-        header = f'--header="Content-Type: multipart/form-data; boundary={boundary}"'
-        postfile = f'--post-file="{str(file_tmp.absolute())}"'
 
         url = f"{protocol}://{espaddr}/OnDemandAgent/Upload?USER={userid}&PW={userpw}"
         self.logger.info(f"upload url : {url}")
@@ -162,45 +161,33 @@ class CollectFileUpload:
         #     , str(self.timeout_second)
         #     # , self.twofactor
         # ]
-        upload_command = f'wget {header} {postfile} {url} -d -o {result_file.absolute()} -t 1 -T {self.timeout_second}'
 
-        self.logger.info(f"wget upload command : {upload_command}")
-        upload_ret = subprocess_run(self.logger, upload_command)
+        if config.IS_USE_WGET:
+            header = f'--header="Content-Type: multipart/form-data; boundary={boundary}"'
+            postfile = f'--post-file="{str(file_tmp.absolute())}"'
 
-        for _ in range(self.retry_max):
-            if upload_ret == 0:  # upload success
-                self.logger.info("wget upload command success.")
-                self._response_check(result_file.absolute())
+            # shlee todo twofactor
+            upload_command = f'wget {header} {postfile} {url} -d -o {result_file.absolute()} -t 1 -T {self.timeout_second}'
+            self.logger.info(f"wget upload command : {upload_command}")
+            upload_ret = request_subprocess(self.logger, upload_command, self.retry_max, self.retry_sleep)
+        else:
+            header = {'Content-Type' : 'multipart/form-data',
+                      'boundary' : boundary}
+            postfile = {'file' : open(file_tmp.absolute(), "rb")}
+            self.logger.info(f"reuest : headers:{header}, url:{url}, file:{postfile}")
+            upload_ret = esp_upload(self.logger, url, header, postfile, self.timeout_second, self.twofactor, self.retry_max, self.retry_sleep)
 
-                # file_size_logging(self.logger, "up", ulfile.absolute(), self.log_transfer.absolute())
-                file_size_logging(self.logger, "up", ulfile.absolute())
-
-                # delete file (xml, result.tmp)
-                self.logger.info(f"delete {file_tmp.absolute()}")
-                file_tmp.unlink(missing_ok=True)
-                result_file.unlink(missing_ok=True)
-                return result
-            else:
-                # retry wget
-                self.logger.info("wget retry start")
-                self.logger.info(f"timeout {self.retry_sleep}")
-
-                time.sleep(self.retry_sleep)
-                upload_ret = subprocess_run(self.logger, upload_command)
-
-                self.logger.info("WARNING msg:Executed retry of ondemand request to ESP.")
-                self.logger.info("wget retry end")
-
-        if not upload_ret == 0:
+        if upload_ret == config.D_SUCCESS:
+            self.logger.info("wget upload command success.")
+            file_size_logging(self.logger, "up", ulfile.absolute())
+        else:
             self.logger.info(f"[adslog] ERROR errorcode:2002 msg:Failed to retry ondemand request for {ulfile.absolute()} to ESP.")
-            self._response_check(result_file.absolute(), is_error=True)
-            result = upload_ret
+            result =  upload_ret
 
+        self._response_check(result_file.absolute(), is_error=False if upload_ret == config.D_SUCCESS else True)
         file_tmp.unlink(missing_ok=True)
         result_file.unlink(missing_ok=True)
-
         self.logger.info("Upload_Tool Finished")
-
         return result
 
     def _response_check(self, result_path, is_error=False):

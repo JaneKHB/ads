@@ -41,8 +41,8 @@ def liplus_upload_loop(pname, sname, pno: Union[int, None]):
         obj = CollectFileUpload(logger, pname, sname, pno)
         obj.start()
 
-        break
-        # time.sleep(loop_interval)
+        # break
+        time.sleep(loop_interval)
 
 
 if __name__ == '__main__':

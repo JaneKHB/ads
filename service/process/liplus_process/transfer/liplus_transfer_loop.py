@@ -38,8 +38,8 @@ def liplus_transfer_loop(logger, pname, sname, pno: Union[int, None]):
         obj = LiplusFileTransfer(logger, pname, sname, pno)
         obj.start()
 
-        # time.sleep(loop_interval)
-        break
+        time.sleep(loop_interval)
+        # break
 
 
 if __name__ == '__main__':

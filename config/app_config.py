@@ -3,13 +3,13 @@ APP_VERSION = "0.0.1"
 
 # ----------------------------------------------
 # Database config for ADS server
-ADS_DB = {'dbname': "adsdb",
-          'user': "adsadmin",
-          'host': "localhost",
-          'password': "canon",
-          'port': 5432}
-ADS_DB_SCHEMA_NAME = 'ads_db'
-ADS_DB_SCHEMA = {**ADS_DB, 'schema': ADS_DB_SCHEMA_NAME}
+# ADS_DB = {'dbname': "adsdb",
+#           'user': "adsadmin",
+#           'host': "localhost",
+#           'password': "canon",
+#           'port': 5432}
+# ADS_DB_SCHEMA_NAME = 'ads_db'
+# ADS_DB_SCHEMA = {**ADS_DB, 'schema': ADS_DB_SCHEMA_NAME}
 
 # -------------------Path-----------------------
 # ----------------------------------------------
@@ -110,6 +110,9 @@ D_PROC_ING = 2
 D_PROC_END = 3
 
 D_REDIS_SHUTDOWN_KEY = "shutdown"
+
+IS_USE_WGET = False
+IS_USE_UNZIP_LIB = True
 
 # ----------------------------------------------
 # Filesystem Root

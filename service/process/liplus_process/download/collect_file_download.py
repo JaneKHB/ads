@@ -23,7 +23,7 @@ from sys import platform
 from service.capa.capa_service import check_capacity
 from service.ini.ini_service import get_ini_value
 from service.remote.remote_service import isExistWget
-from service.remote.request import subprocess_run
+from service.remote.request import request_subprocess, esp_download
 from service.remote.ssh_manager import SSHManager
 from service.security.security_service import security_info
 from service.common.common_service import file_size_logging, get_csv_info, rmtree
@@ -87,6 +87,7 @@ class CollectFileDownload:
         # Processing Time logging
         self.logger.info(f"Total time for the collection process:{processing_time :.2f}[sec] ")
 
+    # ADS\OnDemandCollectDownload\LiplusGet_Tool.bat
     def _liplus_get_tool(self, espaddr, userid, userpasswd, local_fab, remote_fab):
         self.espaddr = espaddr
         self.userid = userid
@@ -107,7 +108,7 @@ class CollectFileDownload:
             return
 
         # Check 7zip
-        if isExist7zip(self.logger) != 0:
+        if not config.IS_USE_UNZIP_LIB and isExist7zip(self.logger) != 0:
             return
 
         # Check two Factor Auth
@@ -148,13 +149,17 @@ class CollectFileDownload:
         #     # , self.twofactor
         # ]
         download_command = f'wget "{url}" -d -o {str(self.result_file.absolute())} -O {str(self.download_file.absolute())} -c -t 1 -T {str(self.timeout_second)}'
-        print(download_command)
 
         # ** Use wget "subprocess" to find file-name in "result.tmp".
         # if it is an abnormal URL, "result.tmp", "tmp_download.zip" is created. "tmp_downlozd.zip" is blank file.
         # khb. todo. "result.tmp" 는 파일 이름(ESP 에서 제공하는 실제 파일 이름)을 획득하기 위해 사용되는것으로 판단됨. request 모듈로도 가능한지 체크 필요.
-        self.logger.info(f"wget download command : {download_command}")
-        download_ret = subprocess_run(self.logger, download_command)
+        if config.IS_USE_WGET:
+            self.logger.info(f"wget download command : {download_command}")
+            download_ret = request_subprocess(self.logger, download_command, self.retry_max, self.retry_sleep)
+        else:
+            self.logger.info(f"download URL : {url}")
+            download_ret = esp_download(self.logger, url, self.download_file.absolute(), self.timeout_second,
+                                    self.twofactor, self.retry_max, self.retry_sleep)
 
         # set collect_file_name (==> find real file name in "result.tmp")
         collect_file_name = self._get_collect_file_name()
@@ -174,50 +179,19 @@ class CollectFileDownload:
         self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
         self.logger.info(f"rename [{self.download_file.absolute()}] -> [{collect_file_name}]")
 
-        # check wget return code
-        for _ in range(self.retry_max):
-            if download_ret == 0:  # download success
-                self.logger.info("wget File Download Request command success")
-                self._response_check(self.result_file.absolute())
-
-                # delete result.tmp
-                self.result_file.unlink(missing_ok=True)
-                self.logger.info(f"delete [{self.result_file.absolute()}]")
-
-                # call upload_ok
-                self._upload_ok(url, os.path.join(self.reg_folder.absolute(), collect_file_name))
-                self._end_wget()
-                self._unzip()
-                return
-            else:
-                # retry wget
-                self.logger.info("wget retry start")
-                self.logger.info(f"timeout {self.retry_sleep}")
-
-                time.sleep(self.retry_sleep)
-                download_ret = subprocess_run(self.logger, download_command)
-
-                collect_file_name = self._get_collect_file_name()
-                self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
-
-                self.logger.info("WARNING msg:Executed retry of file collection from ESP.")
-                self.logger.info("wget retry end")
-
-        # if download fail after retry, process ends
-        if download_ret != 0:
-            self.logger.info(f"[adslog] ERROR errorcode:2000 msg:Failed to retry collecting {collect_file_name} from ESP.")
-            self._response_check(self.result_file.absolute(), is_error=True)
-
-            # remove result.tmp, download file
-            self.result_file.unlink(missing_ok=True)
-            self.download_file.unlink(missing_ok=True)
-
+        if download_ret == config.D_SUCCESS:
+            # call upload_ok
+            self.logger.info("wget File Download Request command success")
+            self.logger.info(f"delete [{self.result_file.absolute()}]")
+            self._upload_ok(url, os.path.join(self.reg_folder.absolute(), collect_file_name))
             self._end_wget()
             self._unzip()
-            return
+        else: # if download fail after retry, process ends
+            self.logger.info(f"[adslog] ERROR errorcode:2000 msg:Failed to retry collecting {collect_file_name} from ESP.")
+            self.download_file.unlink(missing_ok=True)
 
-        # call upload_ok
-        self._upload_ok(url, os.path.join(self.reg_folder.absolute(), collect_file_name))
+        self._response_check(self.result_file.absolute(), is_error=False if download_ret == config.D_SUCCESS else True)
+        self.result_file.unlink(missing_ok=True)
         self._end_wget()
         self._unzip()
 
@@ -269,7 +243,10 @@ class CollectFileDownload:
                         unzip_cmd[0] = '7zz'
                         unzip_cmd = " ".join(unzip_cmd)
 
-                    unzip_ret = unzip(self.logger, unzip_cmd)
+                    if config.IS_USE_UNZIP_LIB:
+                        unzip_ret = unzip(self.logger, zip_fullpath, unzip_dir.absolute())
+                    else:
+                        unzip_ret = unzip(self.logger, unzip_cmd)
 
                     # Unzipping time
                     unzip_end_time = time.time()
@@ -361,34 +338,24 @@ class CollectFileDownload:
         # ]
         download_next_command = f'wget --spider "{next_url}" -d -o {result_path.absolute()} -t 1 -T {str(self.timeout_second)}'
 
-        self.logger.info(f"wget next command : {download_next_command}")
-        download_ret = subprocess_run(self.logger, download_next_command)
-
-        # REM *** wgetコマンドの結果を解析し、エラーならNEXT処理をリトライ*********************************************
-        # *** wget 명령의 결과를 구문 분석하고 오류가 있으면 NEXT 처리를 재시도 ******************************** *************
-        for _ in range(self.retry_max):
-            if download_ret == 0:
-                self.logger.info("wget Next Request command success.")
-                self._response_check(result_path.absolute())
-                break
-            else:
-                self.logger.info("wget retry start")
-                self.logger.info(f"timeout {self.retry_sleep}")
-                time.sleep(self.retry_sleep)
-
-                download_ret = subprocess_run(self.logger, download_next_command)
-
-                self.logger.info("WARNING msg:Executed retry of file deletion instruction to ESP.")
-                self.logger.info("wget retry end")
+        if config.IS_USE_WGET:
+            self.logger.info(f"wget next command : {download_next_command}")
+            download_ret = request_subprocess(self.logger, download_next_command, self.retry_max, self.retry_sleep)
+        else:
+            self.logger.info(f"request URL : {url}")
+            download_ret = esp_download(self.logger, next_url, None, self.timeout_second, self.twofactor,
+                                        self.retry_max, self.retry_sleep)
 
         # NEXT処理をリトライしてもエラーの場合、エラーログを出力
         # NEXT 처리를 재 시도해도 오류가 발생하면 오류 로그 출력
-        if download_ret != 0:
+        if download_ret == config.D_SUCCESS:
+            self.logger.info("wget Next Request command success.")
+        else:
             self.logger.info("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
             # 失敗時のログ出力(ErroCode)
             # 실패시 로그 출력 (ErroCode)
-            self._response_check(result_path.absolute(), is_error=True)
 
+        self._response_check(result_path.absolute(), is_error=False if download_ret == config.D_SUCCESS else True)
         # 一時ファイルを削除する
         # 임시 파일 삭제
         result_path.unlink(missing_ok=True)

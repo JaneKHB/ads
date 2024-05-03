@@ -156,7 +156,7 @@ class FdtFileUpload:
                              , self.retry_max, self.retry_sleep)
         file_tmp.unlink(missing_ok=True)
 
-        # shlee todo request.py line 55 중복
+
         '''
         # *** wgetコマンドの実行結果をログに出力する ***********************************
         # wget 명령의 실행 결과를 로그에 출력

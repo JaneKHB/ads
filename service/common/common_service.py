@@ -88,17 +88,18 @@ def rmdir_func(logger, dir_path):
             return config.D_ERROR
     return config.D_SUCCESS
 
-def file_size_logging(logger, type, file_path, module_id = ""):
+def file_size_logging(logger, type, file_path, tool_id =""):
 
     # 로그경로, 파일 사이즈 초기화
+    size_mb = None
     log_path = Path(config.FILE_LOG_LIPLUS_FILE_TRANSFER)
     file = Path(file_path)
     if file.exists():
         size_mb = file.stat().st_size / (1024 * 1024)
 
     # 로그 메세지, 헤더 초기화
-    log_msg = f"{type},{module_id},{file_path},{size_mb}"
-    header = "time,subprocess_name,up/down,module_id,filename,filesize(MB)\n"
+    log_msg = f"{type},{tool_id},{file_path},{size_mb}"
+    header = "time,subprocess_name,up/down,tool_id,filename,filesize(MB)\n"
 
     file_size_logger = log.TimedLogger(logger.name, log.Setting(log_path.absolute(), True))
 

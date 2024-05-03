@@ -15,8 +15,9 @@ import pandas as pd
 from typing import Union
 from sys import platform
 
-from config.app_config import LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
-    FILE_LOG_LIPLUS_TRANSFER_PATH
+# from config.app_config import LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
+#     FILE_LOG_LIPLUS_TRANSFER_PATH
+import config.app_config as config
 from service.capa.capa_service import check_capacity
 from service.common.common_service import rmdir_func, get_csv_info
 from service.ini.ini_service import get_ini_value
@@ -31,9 +32,9 @@ class LiplusFileTransfer:
         self.sname = sname
         self.pno = pno
 
-        self.current_dir = LIPLUS_CURRENT_DIR
+        self.current_dir = config.LIPLUS_CURRENT_DIR
         self.tool_df = get_csv_info("LIPLUS", "TRANSFER", self.pno)
-        self.sshkey_path = get_ini_value(config_ini, "SECURITY", "SSHKEY_PATH")
+        self.sshkey_path = get_ini_value(config.config_ini, "SECURITY", "SSHKEY_PATH")
 
         self.toolid = None  # 装置名 (MachineName)
         self.reg_folder = None  # 正規フォルダパス (* Liplus Data Download Folder)
@@ -74,18 +75,18 @@ class LiplusFileTransfer:
         self.reg_folder = reg_folder  # 正規フォルダパス (* Liplus Data Download Folder)
 
         logger_header = f"[{self.toolid}]"
-        liplus_transfer_log_path = os.path.dirname(FILE_LOG_LIPLUS_TRANSFER_PATH.format(f"_{self.pno}"))
+        liplus_transfer_log_path = os.path.dirname(config.FILE_LOG_LIPLUS_TRANSFER_PATH.format(f"_{self.pno}"))
         self.logger.info(f"{logger_header} LiplusTransfer_Tool.bat start!!")
 
         ldb_dir = ldb_dir.replace("\\", "/")
         ldb_dit_split = ldb_dir.split("/", 4)
         remote_liplus_ip = ldb_dit_split[2]
         remote_liplus_dir = "/liplus/" + ldb_dit_split[4]
-        ldb_user = get_ini_value(config_ini, "LIPLUS", "LIPLUS_LDB_USER")
+        ldb_user = get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_LDB_USER")
 
         # Liplus Data Download Folder
         if reg_folder == "" or pd.isna(reg_folder):
-            self.reg_folder = LIPLUS_REG_FOLDER_DEFAULT + "/" + self.toolid
+            self.reg_folder = config.LIPLUS_REG_FOLDER_DEFAULT + "/" + self.toolid
 
         # rem debug --------------
         self.logger.info(f"{logger_header} REMOTE_LIPLUS_IP: {remote_liplus_ip}")
@@ -116,7 +117,7 @@ class LiplusFileTransfer:
         self._write_to_file(f"{liplus_transfer_log_path}/list_{self.pno}.txt", list_dir_sep)
 
         # Check 7zip
-        if isExist7zip(self.logger) != 0:
+        if not config.IS_USE_UNZIP_LIB and isExist7zip(self.logger) != 0:
             return
 
         for filename in list_dir:
@@ -133,7 +134,10 @@ class LiplusFileTransfer:
                 unzip_cmd[0] = '7zz'
                 unzip_cmd = " ".join(unzip_cmd)
 
-            unzip_ret = unzip(self.logger, unzip_cmd)
+            if config.IS_USE_UNZIP_LIB:
+                unzip_ret = unzip(self.logger, file, unzip_dir)
+            else:
+                unzip_ret = unzip(self.logger, unzip_cmd)
 
             # if unzip success, 0 returned.
             if unzip_ret != 0:

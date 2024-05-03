@@ -41,8 +41,8 @@ def liplus_download_loop(pname, sname, pno: Union[int, None]):
         obj = CollectFileDownload(logger, pname, sname, pno)
         obj.start()
 
-        break
-        # time.sleep(loop_interval)
+        # break
+        time.sleep(loop_interval)
 
 if __name__ == '__main__':
     # signal handler(sigint, sigterm)
