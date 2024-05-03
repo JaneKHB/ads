@@ -111,8 +111,8 @@ D_PROC_END = 3
 
 D_REDIS_SHUTDOWN_KEY = "shutdown"
 
-IS_USE_WGET = False
-IS_USE_UNZIP_LIB = True
+IS_USE_WGET = True
+IS_USE_UNZIP_LIB = False
 
 # ----------------------------------------------
 # Filesystem Root
