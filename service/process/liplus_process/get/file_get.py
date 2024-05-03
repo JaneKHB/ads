@@ -20,12 +20,12 @@ from sys import platform
 #     LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH, FILE_LOG_PATH
 import config.app_config as config
 from service.capa.capa_service import check_capacity
-from service.common.common_service import check_unknown, rmdir_func, get_csv_info
+from service.common.common_service import check_unknown, rmdir_func, get_csv_info, unzip_zipfile
 from service.remote.remote_service import isExistWget
 from service.remote.request import esp_download, subprocess_run, request_subprocess
 from service.ini.ini_service import get_ini_value
 from service.security.security_service import security_info
-from service.zip.sevenzip_service import unzip, isExist7zip, unzip_use_lib
+from service.zip.sevenzip_service import unzip, isExist7zip
 
 
 class LiplusFileGet:
@@ -210,7 +210,7 @@ class LiplusFileGet:
                 unzip_cmd = " ".join(unzip_cmd)
 
             if config.IS_USE_UNZIP_LIB:
-                unzip_ret = unzip_use_lib(self.logger, fname, reg_folder_tmp)
+                unzip_ret = unzip_zipfile(self.logger, fname, reg_folder_tmp)
             else:
                 unzip_ret = unzip(self.logger, unzip_cmd)
 

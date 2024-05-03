@@ -19,10 +19,10 @@ from sys import platform
 #     FILE_LOG_LIPLUS_TRANSFER_PATH
 import config.app_config as config
 from service.capa.capa_service import check_capacity
-from service.common.common_service import rmdir_func, get_csv_info
+from service.common.common_service import rmdir_func, get_csv_info, unzip_zipfile
 from service.ini.ini_service import get_ini_value
 from service.remote.ssh_manager import SSHManager
-from service.zip.sevenzip_service import unzip, isExist7zip, unzip_use_lib
+from service.zip.sevenzip_service import unzip, isExist7zip
 
 
 class LiplusFileTransfer:
@@ -135,7 +135,7 @@ class LiplusFileTransfer:
                 unzip_cmd = " ".join(unzip_cmd)
 
             if config.IS_USE_UNZIP_LIB:
-                unzip_ret = unzip_use_lib(self.logger, file, unzip_dir)
+                unzip_ret = unzip_zipfile(self.logger, file, unzip_dir)
             else:
                 unzip_ret = unzip(self.logger, unzip_cmd)
 

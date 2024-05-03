@@ -196,16 +196,16 @@ def get_csv_info(module, type, pno=0):
                           skiprows=skiprows, sep=',', index_col=False)
     return tool_df
 
-
-def unzip_zipfile(logger, zip_path, unzip_dir):
+def unzip_zipfile(logger, zip_path, des_path):
     try:
-        if not Path(zip_path).exists() or Path(unzip_dir).exists():
+        if not Path(zip_path).exists():
             logger.info("This is the wrong path.")
-            return False
+            return -1
 
         with zipfile.ZipFile(zip_path) as z:
-            z.extractall(unzip_dir)
+            z.extractall(des_path)
+        return 0
 
-        return True
     except Exception as e:
-        logger.error(e)
+        logger.error(f"unzip unknown error. {e}")
+        return -1

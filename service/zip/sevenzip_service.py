@@ -1,5 +1,4 @@
 import subprocess
-import zipfile
 from sys import platform
 
 # subprocess
@@ -14,18 +13,6 @@ def isExist7zip(logger):
         logger.error("errorcode:1001 msg:7Zip command does not exist.")
 
     return ret
-
-# use zipfile lib
-def unzip_use_lib(logger, zip_path, des_path):
-
-    try:
-        logger.info(f"unzip use zipfile lib")
-        with zipfile.ZipFile(zip_path, "r") as z:
-            z.extractall(des_path)
-        return True
-    except Exception as ex:
-        logger.error(f"unzip unknown error. {ex}")
-        return False
 
 # subprocess
 def unzip(logger, unzip_cmd):
