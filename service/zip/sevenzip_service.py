@@ -16,7 +16,7 @@ def isExist7zip(logger):
     return ret
 
 # use zipfile lib
-def unzip(logger, zip_path, des_path):
+def unzip_use_lib(logger, zip_path, des_path):
 
     try:
         logger.info(f"unzip use zipfile lib")

@@ -27,7 +27,7 @@ from service.remote.request import request_subprocess, esp_download
 from service.remote.ssh_manager import SSHManager
 from service.security.security_service import security_info
 from service.common.common_service import file_size_logging, get_csv_info, rmtree
-from service.zip.sevenzip_service import unzip, isExist7zip
+from service.zip.sevenzip_service import unzip, isExist7zip, unzip_use_lib
 
 
 class CollectFileDownload:
@@ -244,7 +244,7 @@ class CollectFileDownload:
                         unzip_cmd = " ".join(unzip_cmd)
 
                     if config.IS_USE_UNZIP_LIB:
-                        unzip_ret = unzip(self.logger, zip_fullpath, unzip_dir.absolute())
+                        unzip_ret = unzip_use_lib(self.logger, zip_fullpath, unzip_dir.absolute())
                     else:
                         unzip_ret = unzip(self.logger, unzip_cmd)
 
