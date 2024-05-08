@@ -10,6 +10,7 @@ import service.logger.logger_service as log
 from pathlib import Path
 
 from service.common.common_service import rmtree
+from service.ini.ini_service import get_ini_value
 
 logger = None#log.FileLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
@@ -139,11 +140,12 @@ def copy_csv(original_csv_path, base_dir):
         csv_header2 = f"{read_csv[1]}\n"
         list_idx = 2
         is_loop = True
+        toolinfo_seperate_size = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_TOOL_INFO_SEPERATE_SIZE"))
 
         while is_loop:
             array_len = 0
             csv_line = []
-            for _ in range(10):
+            for _ in range(toolinfo_seperate_size):
                 if list_idx < len(read_csv):
                     csv_line.append(f"{read_csv[list_idx]}\n")
                     list_idx += 1
@@ -510,7 +512,7 @@ if __name__ == '__main__':
     if not log_path.parent.exists():
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger = log.TimedLogger(config.LOG_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
+    logger = log.TimedLogger(config.PROC_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
     logger.info("--------------------START SETUP CSV--------------------")
     setup_csv()

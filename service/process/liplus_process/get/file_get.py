@@ -46,7 +46,7 @@ class LiplusFileGet:
         self.userid = None  # ユーザID (User Id)
         self.userpasswd = None  # ユーザパスワード (User Password)
 
-        self.retry_max = 5  # rem リトライ上限 (Retry Limit)
+        self.retry_max = int(get_ini_value(config.config_ini, "EEC", "DOWNLOAD_RETRY_CNT"))  # rem リトライ上限 (Retry Limit)
         self.retry_sleep = 2  # rem リトライ時のスリープ時間 (Retry Sleep Time)
 
         # REM 2要素認証の利用有無を判別 (two Factor Auth)
@@ -58,7 +58,7 @@ class LiplusFileGet:
 
     def start(self):
         # Capacity Check
-        if not check_capacity("LiplusGet"):
+        if not check_capacity(config.PROC_NAME_LIPLUS_GET):
             return
 
         # Processing Start Time
@@ -101,7 +101,7 @@ class LiplusFileGet:
         debug_log_path = Path(config.FILE_LOG_PATH, f"{toolid}_debug.log")
 
         protocol = "http"
-        timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
+        timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_TIME_OUT"))
         liplus_get_log_path = os.path.dirname(config.FILE_LOG_LIPLUS_GET_PATH.format(f"_{self.pno}"))
 
         self.logger_header = f"[{self.toolid}]"
@@ -124,19 +124,19 @@ class LiplusFileGet:
 
         # Make Liplus Data temp Folder
         if not os.path.exists(reg_folder_tmp):
-            self.logger.info(f"{self.logger_header} mkdir reg_folder_tmp '{reg_folder_tmp}'")
             os.makedirs(reg_folder_tmp)
+            self.logger.info(f"{self.logger_header} mkdir reg_folder_tmp '{reg_folder_tmp}'")
 
         # Make Liplus Data Download Folder
         if not os.path.exists(self.reg_folder):
-            self.logger.info(f"{self.logger_header} mkdir reg_folder '{self.reg_folder}'")
             os.makedirs(self.reg_folder)
+            self.logger.info(f"{self.logger_header} mkdir reg_folder '{self.reg_folder}'")
 
         # Check two Factor Auth
         rtn, self.twofactor = security_info(self.logger, self.espaddr, self.securityinfo_path, self.securitykey_path)
         if rtn == config.D_SUCCESS and len(self.twofactor):
             protocol = "https"
-            timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
+            # timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
         elif rtn != config.D_SUCCESS:
             return
 
@@ -281,8 +281,8 @@ class LiplusFileGet:
         self.logger.info(f"{self.logger_header} dir '{reg_folder_tmp}' : {list_dir}")
 
         # Remove reg_folder_tmp
-        self.logger.info(f"{self.logger_header} rmdir '{reg_folder_tmp}'")
         rmdir_func(self.logger, reg_folder_tmp)
+        self.logger.info(f"{self.logger_header} rmdir '{reg_folder_tmp}'")
 
         self.logger.info(f"{self.logger_header} LiplusGet_Tool Finished")
 

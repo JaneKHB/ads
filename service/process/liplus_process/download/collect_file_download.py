@@ -42,7 +42,7 @@ class CollectFileDownload:
         self.current_dir = config.LIPLUS_DOWNLOAD_CURRENT_DIR
         self.tool_df = get_csv_info("LIPLUS", "DOWNLOAD")
         self.log_transfer = "file_transfer.log"
-        self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTP_TIME_OUT"))
+        self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_TIME_OUT"))
 
         self.espaddr = None  # 接続先ESPアドレス (ESP Address)
         self.userid = None  # ログインユーザ (User Id)
@@ -50,7 +50,7 @@ class CollectFileDownload:
         self.local_fab = None  # LocalFab名 (置換前)
         self.remote_fab = None  # RemoteFab名 (置換後)
 
-        self.retry_max = 5
+        self.retry_max = int(get_ini_value(config.config_ini, "EEC", "DOWNLOAD_RETRY_CNT"))
         self.retry_sleep = 2
         self.ldb_user = "lpsuser"
         self.reg_folder = Path(self.current_dir, "Download")
@@ -63,7 +63,7 @@ class CollectFileDownload:
 
     def start(self):
         # Capacity Check
-        if not check_capacity("CollectFileDownload"):
+        if not check_capacity(config.PROC_NAME_LIPLUS_DOWN):
             return
 
         # Processing Start Time
@@ -115,7 +115,7 @@ class CollectFileDownload:
         rtn, self.twofactor = security_info(self.logger, self.espaddr, self.securityinfo_path, self.securitykey_path)
         if rtn == config.D_SUCCESS and len(self.twofactor):
             protocol = "https"
-            self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
+            # self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
         elif rtn != config.D_SUCCESS:
             return
 
@@ -286,8 +286,8 @@ class CollectFileDownload:
                         tick_scp_end = time.time() - tick_scp_start
                         self.logger.info(f"Transfer time to LiplusDB server:{tick_scp_end}[sec]")
 
-                        self.logger.info(f"rmdir [{unzip_dir}]")
                         rmtree(unzip_dir.absolute())
+                        self.logger.info(f"rmtree [{unzip_dir}]")
 
                         self.logger.info("file transfer end.")
                     else:
@@ -302,8 +302,8 @@ class CollectFileDownload:
                         except Exception as e:
                             self.logger.error(e)
 
-                        self.logger.info(f"rmdir {unzip_dir}")
                         rmtree(unzip_dir.absolute())
+                        self.logger.info(f"rmtree {unzip_dir}")
                 else:
                     self.logger.warn(f"LDB_PATH not found. '{remote_liplus_dir}'")
 

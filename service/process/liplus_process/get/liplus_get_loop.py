@@ -17,8 +17,10 @@ import config.app_config as config
 from typing import Union
 from service.process.liplus_process.get.file_get import LiplusFileGet
 
+from service.ini.ini_service import get_ini_value
+
 exit_flag = False  # subprocess Exit Flag
-loop_interval = 5  # second
+loop_interval = int(get_ini_value(config.config_ini, "EEC", "LIPLUS_GET_CYCLE_TIME"))  # second
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -52,6 +54,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, SignalHandler)
 
     logger_path = config.FILE_LOG_LIPLUS_GET_PATH.format(f"_{pno}")
-    logger = log.TimedLogger(config.LOG_NAME_LIPLUS_GET, log.Setting(logger_path))
+    logger = log.TimedLogger(config.PROC_NAME_LIPLUS_GET, log.Setting(logger_path))
 
-    liplus_get_loop(logger, "LIPLUS", "GET", pno)
+    proc_name = config.PROC_NAME_LIPLUS_GET.split('_')
+    liplus_get_loop(logger, proc_name[0], proc_name[1], pno)

@@ -40,11 +40,11 @@ class CollectFileUpload:
         self.upload_dir = Path(config.LIPLUS_UPLOAD_CURRENT_DIR, "Upload")
         self.log_name = "uploadResult.log"
         self.log_transfer = "file_transfer.log"
-        self.timeout_second = int(get_ini_value(config.config_ini, "EEC", "EEC_ESP_HTTP_TIME_OUT"))
+        self.timeout_second = int(get_ini_value(config.config_ini, "EEC", "LIPLUS_ESP_TIME_OUT"))
 
         self.tool_df = get_csv_info("LIPLUS", "UPLOAD")
 
-        self.retry_max = 5
+        self.retry_max = int(get_ini_value(config.config_ini, "EEC", "DOWNLOAD_RETRY_CNT"))
         self.retry_sleep = 2
 
         self.securityinfo_path = config.SECURITYINFO_PATH
@@ -128,7 +128,7 @@ class CollectFileUpload:
         rtn, self.twofactor = security_info(self.logger, espaddr, self.securityinfo_path, self.securitykey_path)
         if rtn == config.D_SUCCESS and len(self.twofactor):
             protocol = "https"
-            self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
+            # self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_HTTPS_TIME_OUT"))
         elif rtn != config.D_SUCCESS:
             return result
 
@@ -182,7 +182,7 @@ class CollectFileUpload:
             file_size_logging(self.logger, "up", ulfile.absolute())
         else:
             self.logger.info(f"[adslog] ERROR errorcode:2002 msg:Failed to retry ondemand request for {ulfile.absolute()} to ESP.")
-            result =  upload_ret
+            result = upload_ret
 
         self._response_check(result_file.absolute(), is_error=False if upload_ret == config.D_SUCCESS else True)
         file_tmp.unlink(missing_ok=True)
