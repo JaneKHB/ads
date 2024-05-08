@@ -17,9 +17,11 @@ import config.app_config as config
 from typing import Union
 from service.process.liplus_process.download.collect_file_download import CollectFileDownload
 
+from service.ini.ini_service import get_ini_value
+
 exit_flag = False   # subprocess Exit Flag
-loop_interval = 5   # second
-logger = log.TimedLogger(config.LOG_NAME_LIPLUS_DOWN, log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
+loop_interval = int(get_ini_value(config.config_ini, "EEC", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_CYCLE_TIME"))   # second
+logger = log.TimedLogger(config.PROC_NAME_LIPLUS_DOWN, log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
 
 
 def SignalHandler(signum, frame):
@@ -49,4 +51,5 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, SignalHandler)
     signal.signal(signal.SIGTERM, SignalHandler)
 
-    liplus_download_loop("LIPLUS", "DOWNLOAD", None)
+    proc_name = config.PROC_NAME_LIPLUS_DOWN.split('_')
+    liplus_download_loop(proc_name[0], proc_name[1], None)

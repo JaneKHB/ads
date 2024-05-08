@@ -41,7 +41,7 @@ class LiplusFileTransfer:
 
     def start(self):
         # Capacity Check
-        if not check_capacity("LiplusTransfer"):
+        if not check_capacity(config.PROC_NAME_LIPLUS_TRANSFER):
             return
 
         # Processing Start Time
@@ -176,8 +176,8 @@ class LiplusFileTransfer:
             self.logger.info(f"{logger_header} SCP transfer time to LiplusDB server: :{transfer_end:.3f}[sec]")
 
             # Unzip Folder Remove
-            self.logger.info(f"{logger_header} rmdir '{unzip_dir}'")
             rmdir_func(self.logger, unzip_dir)
+            self.logger.info(f"{logger_header} rmdir '{unzip_dir}'")
 
         self.logger.info(f"{logger_header} LiplusTransfer_Tool Finished")
 
