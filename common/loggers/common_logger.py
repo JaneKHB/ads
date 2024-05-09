@@ -1,4 +1,6 @@
 import logging.handlers
+import os
+import gzip
 
 import config.app_config as config
 
@@ -13,6 +15,16 @@ class Setting:
         self.MAX_BYTES = config.FILE_LOG_MAXBYTE
         self.BACKUP_COUNT = config.FILE_LOG_BACKUPCOUNT
         self.FORMAT = config.FILE_LOG_FILE_SIZE_FORMAT if is_file_size_logging else config.FILE_LOG_FORMAT
+
+class GZipRotator:
+    def __call__(self, source, dest):
+        os.rename(source, dest)
+        f_in = open(dest, 'rb')
+        f_out = gzip.open("%s.gz" % dest, 'wb')
+        f_out.writelines(f_in)
+        f_out.close()
+        f_in.close()
+        os.remove(dest)
 
 def TimedLogger(name, setting, when="midnight", interval=1):
     # 로거 & 포매터 & 핸들러 생성
@@ -37,6 +49,7 @@ def TimedLogger(name, setting, when="midnight", interval=1):
     # 핸들러 & 포매터 결합
     # streamHandler.setFormatter(formatter)
     rotatingHandler.setFormatter(formatter)
+    rotatingHandler.rotate = GZipRotator()
 
     # 로거 & 핸들러 결합
     # logger.addHandler(streamHandler)
@@ -70,6 +83,7 @@ def FileLogger(name, setting):
     # 핸들러 & 포매터 결합
     # streamHandler.setFormatter(formatter)
     rotatingHandler.setFormatter(formatter)
+    rotatingHandler.rotate = GZipRotator()
 
     # 로거 & 핸들러 결합
     # logger.addHandler(streamHandler)

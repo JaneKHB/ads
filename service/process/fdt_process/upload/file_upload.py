@@ -16,7 +16,7 @@ import random
 
 import config.app_config as config
 import service.remote.request as req
-import util.time_util as time_util
+import common.utils.time_util as time_util
 
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
@@ -51,9 +51,8 @@ class FdtFileUpload:
 
     @staticmethod
     def get_uptool_info(skiprows_str = None):
-        file_path = config.FDT_UPTOOL_CSV
+        file_path = config.FDT_UPTOOL_CSV_PATH
         if skiprows_str is None:
-            # shlee todo 스킵로우 확인할것
             skiprows = int(get_ini_value(config.config_ini, "EEC", "EEC_UPTOOL_INFO_SKIP_LINE"))
         else:
             skiprows = int(skiprows_str)

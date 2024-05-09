@@ -12,10 +12,10 @@ import signal
 
 from typing import Union
 
-import service.logger.logger_service as log
+import common.loggers.common_logger as log
 import config.app_config as config
 
-from config.app_config import D_SHUTDOWN, D_PROC_START, D_PROC_ING, D_PROC_END, config_ini, D_SUCCESS, D_REDIS_SHUTDOWN_KEY
+from config.app_config import config_ini
 from service.ini.ini_service import get_ini_value
 from service.process.fdt_process.download.file_download import FdtFileDownload
 from service.process.fdt_process.download.fpa_trace import FdtFpaTrace

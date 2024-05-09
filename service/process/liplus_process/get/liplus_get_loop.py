@@ -11,7 +11,7 @@ import sys
 import time
 import signal
 
-import service.logger.logger_service as log
+import common.loggers.common_logger as log
 import config.app_config as config
 
 from typing import Union
@@ -20,7 +20,7 @@ from service.process.liplus_process.get.file_get import LiplusFileGet
 from service.ini.ini_service import get_ini_value
 
 exit_flag = False  # subprocess Exit Flag
-loop_interval = int(get_ini_value(config.config_ini, "EEC", "LIPLUS_GET_CYCLE_TIME"))  # second
+loop_interval = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_GET_CYCLE_TIME"))  # second
 
 def SignalHandler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
@@ -38,7 +38,7 @@ def liplus_get_loop(logger, pname, sname, pno: Union[int, None]):
 
         # Liplus_batch FileGet.bat
         obj = LiplusFileGet(logger, pname, sname, pno)
-        obj.start()
+        obj.start(logger)
 
         time.sleep(loop_interval)
         # break
@@ -56,5 +56,6 @@ if __name__ == '__main__':
     logger_path = config.FILE_LOG_LIPLUS_GET_PATH.format(f"_{pno}")
     logger = log.TimedLogger(config.PROC_NAME_LIPLUS_GET, log.Setting(logger_path))
 
+    # LIPLUS_GET
     proc_name = config.PROC_NAME_LIPLUS_GET.split('_')
     liplus_get_loop(logger, proc_name[0], proc_name[1], pno)

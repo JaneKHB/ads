@@ -1,9 +1,7 @@
 import paramiko
 import os
-import sys
-import traceback
 
-from config.app_config import D_SUCCESS, D_ERROR
+import common.decorators.common_deco as common
 
 
 class SSHManager:
@@ -31,7 +29,8 @@ class SSHManager:
         self.ssh_client.close()
         self.sftp_client.close()
 
-    def send_all_file(self, local_folder, remote_folder):
+    @common.check_process_time
+    def send_all_file(self, local_folder, remote_folder, logger):
         try:
             local_file_list = os.listdir(local_folder)
             for filename in local_file_list:

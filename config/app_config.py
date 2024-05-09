@@ -17,45 +17,45 @@ APP_VERSION = "0.0.1"
 config_ini = "/ADS/appsrc/config/config.ini"
 devlog_dir = "/ADS/devlog"
 
-CURRENT_PATH = "/ADS/"
-CONFIG_PATH = "/ADSconfiguration/"
+CURRENT_DIR = "/ADS/"
+CONFIG_DIR = "/ADSconfiguration/"
 
-ORIGINAL_SOURCE_PATH = CONFIG_PATH + "appsrc/"
+ORIGINAL_SOURCE_DIR = CONFIG_DIR + "appsrc/"
 
-CHECK_CAPA_DRIVE = CURRENT_PATH
-CHECK_CAPA_CURRENT_DIR = CURRENT_PATH + "Capacity_Check/"
+CHECK_CAPA_DRIVE_DIR = CURRENT_DIR
+CHECK_CAPA_CURRENT_DIR = CURRENT_DIR + "capacity_check/"
 CHECK_CAPA_LIMIT_PERCENT = 5
 
-CSV_ORIGINAL_PATH = CONFIG_PATH + "originalcsv/"
-CSV_REAL_PATH = CURRENT_PATH + "csv/"
+CSV_ORIGINAL_DIR = CONFIG_DIR + "originalcsv/"
+CSV_REAL_DIR = CURRENT_DIR + "csv/"
 
 # FDT path
-FDT_TOOL_CSV = CSV_REAL_PATH + "ToolInfo.csv"
-FDT_UPTOOL_CSV = CSV_REAL_PATH + "UpToolInfo.csv"
-FDT_CURRENT_DIR = CURRENT_PATH + "fdt_batch/"
+FDT_TOOL_CSV_PATH = CSV_REAL_DIR + "ToolInfo.csv"
+FDT_UPTOOL_CSV_PATH = CSV_REAL_DIR + "UpToolInfo.csv"
+FDT_CURRENT_DIR = CURRENT_DIR + "fdt_batch/"
 
-FDT_ADS2_FOLDER = "/ADS/LOG/temp"
-FDT_ADS2_UPLOAD = "/ADS/LOG/Upload"
+FDT_ADS2_FOLDER_DIR = "/ADS/LOG/temp/"
+FDT_ADS2_UPLOAD_DIR = "/ADS/LOG/upload/"
 
-FDT_FCS_HOME = CURRENT_PATH + "fcs/"
+FDT_FCS_HOME_DIR = CURRENT_DIR + "fcs/"
 FDT_MOVEINORDEROFOLDNESSPATH = "/ADS/MoveInOrderOfOldness.jar"
 
-FDT_FPA_TRACE_REG_FOLDER = "/ADS/var/fpatrace"
+FDT_FPA_TRACE_REG_FOLDER_DIR = "/ADS/var/fpatrace/"
 
-FDT_UP_CURRENT_DIR = "/ADS/UploadBatch/"
-FDT_UP_DIR = "/ADS/FSLOG/uploads"
+FDT_UP_CURRENT_DIR = "/ADS/uploadbatch/"
+FDT_UP_DIR = "/ADS/FSLOG/uploads/"
 
 # Liplus path
-LIPLUS_CURRENT_DIR = CURRENT_PATH + "Liplus_batch/"
-LIPLUS_DOWNLOAD_CURRENT_DIR = CURRENT_PATH + "OnDemandCollectDownload/"
-LIPLUS_UPLOAD_CURRENT_DIR = CURRENT_PATH + "CollectRequestFileUpload/"
-LIPLUS_ONDEMAND_DIR = CURRENT_PATH + "ondemand/"
-LIPLUS_REG_FOLDER_DEFAULT = CURRENT_PATH + "Liplus_LOG/"
-LIPLUS_REG_FOLDER_TMP = CURRENT_PATH + "Liplus_TMP/"
+LIPLUS_CURRENT_DIR = CURRENT_DIR + "liplus_batch/"
+LIPLUS_DOWNLOAD_CURRENT_DIR = CURRENT_DIR + "download/"
+LIPLUS_UPLOAD_CURRENT_DIR = CURRENT_DIR + "upload/"
+LIPLUS_ONDEMAND_DIR = CURRENT_DIR + "ondemand/"
+LIPLUS_REG_FOLDER_DEFAULT_DIR = CURRENT_DIR + "liplus_lOG/"
+LIPLUS_REG_FOLDER_TMP_DIR = CURRENT_DIR + "liplus_tmp/"
 
-LIPLUS_TOOL_CSV = CSV_REAL_PATH + "LiplusToolInfo{}.csv"
-LIPLUS_DOWNLOAD_INFO_CSV = CSV_REAL_PATH + "DownloadInfo.csv"
-LIPLUS_UPLOAD_INFO_CSV = CSV_REAL_PATH + "UploadInfo.csv"
+LIPLUS_TOOL_CSV_PATH = CSV_REAL_DIR + "LiplusToolInfo{}.csv"
+LIPLUS_DOWNLOAD_INFO_CSV_PATH = CSV_REAL_DIR + "DownloadInfo.csv"
+LIPLUS_UPLOAD_INFO_CSV_PATH = CSV_REAL_DIR + "UploadInfo.csv"
 # ----------------------------------------------
 # ----------------------------------------------
 
@@ -92,7 +92,7 @@ LIPLUS_UPLOAD_DATA_TYPE = {"espaddr": str, "userid": str, "userpasswd": str, "lo
 # ----------------------------------------------
 
 # Security
-SECURITYINFO_PATH = CSV_ORIGINAL_PATH + "SecurityInfo.csv"
+SECURITYINFO_PATH = CSV_ORIGINAL_DIR + "SecurityInfo.csv"
 
 # ----------------------------------------------
 
@@ -116,31 +116,31 @@ IS_USE_UNZIP_LIB = False
 
 # ----------------------------------------------
 # Filesystem Root
-FS_ROOT = CURRENT_PATH + 'appsrc/'
+FS_ROOT_DIR = CURRENT_DIR + 'appsrc/'
 PROCESS_SCRIPT = 'process_main.py'
 
 # ----------------------------------------------
 # Log System Settings
 FILE_LOG = 'APP_LOG'
-FILE_LOG_PATH = CURRENT_PATH + 'devlog/'
-FILE_LOG_LIPLUS_PATH = FILE_LOG_PATH + 'Liplus/'
-FILE_LOG_MAIN_PATH = FILE_LOG_PATH + 'ads_dev_log.log'
-FILE_LOG_SETUP_CSV_PATH = CONFIG_PATH + 'setup_csv_log/setup_csv.log'
-FILE_LOG_LIPLUS_GET_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_get{}.log'
-FILE_LOG_LIPLUS_TRANSFER_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_transfer{}.log'
-FILE_LOG_LIPLUS_DOWNLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_download.log'
-FILE_LOG_LIPLUS_UPLOAD_PATH = FILE_LOG_LIPLUS_PATH + 'liplus_upload.log'
-FILE_LOG_LIPLUS_FILE_TRANSFER = FILE_LOG_LIPLUS_PATH + 'file_transfer.log'
-FILE_LOG_CAPA_LOG_PATH = CURRENT_PATH + "Capacity_Check/" + "Disk_Limit.log"
+FILE_LOG_PATH_DIR = CURRENT_DIR + 'devlog/'
+FILE_LOG_LIPLUS_DIR = FILE_LOG_PATH_DIR + 'liplus/'
+FILE_LOG_MAIN_PATH = FILE_LOG_PATH_DIR + 'ads_dev_log.log'
+FILE_LOG_SETUP_CSV_PATH = CONFIG_DIR + 'setup_csv_log/setup_csv.log'
+FILE_LOG_LIPLUS_GET_PATH = FILE_LOG_LIPLUS_DIR + 'liplus_get{}.log'
+FILE_LOG_LIPLUS_TRANSFER_PATH = FILE_LOG_LIPLUS_DIR + 'liplus_transfer{}.log'
+FILE_LOG_LIPLUS_DOWNLOAD_PATH = FILE_LOG_LIPLUS_DIR + 'liplus_download.log'
+FILE_LOG_LIPLUS_UPLOAD_PATH = FILE_LOG_LIPLUS_DIR + 'liplus_upload.log'
+FILE_LOG_LIPLUS_FILE_TRANSFER_PATH = FILE_LOG_LIPLUS_DIR + 'file_transfer.log'
+FILE_LOG_CAPA_LOG_PATH = CURRENT_DIR + "capacity_check/" + "Disk_Limit.log"
 FILE_LOG_MAXBYTE = 10 * 1024 * 1024
 FILE_LOG_BACKUPCOUNT = 30
 FILE_LOG_FORMAT = '%(asctime)s [%(levelname)8s | %(name)6s, %(module)s(%(lineno)3s)] --- %(message)s'
 FILE_LOG_FILE_SIZE_FORMAT = '%(asctime)s,%(name)s,%(message)s'
 FILE_LOG_DATEFMT = '%Y%m%d'
 
-PROC_NAME_LIPLUS_DOWN = "LIPLUS_COLLECTREQUESTFILEUPLOAD"
+PROC_NAME_LIPLUS_DOWN = "LIPLUS_DOWNLOAD"
 PROC_NAME_LIPLUS_GET = "LIPLUS_GET"
 PROC_NAME_LIPLUS_TRANSFER = "LIPLUS_TRANSFER"
-PROC_NAME_LIPLUS_UPLOAD = "LIPLUS_ONDEMANDCOLLECTDOWNLOAD"
+PROC_NAME_LIPLUS_UPLOAD = "LIPLUS_UPLOAD"
 PROC_NAME_SETUP_CSV = "SETUP_CSV"
 PROC_NAME_FDT_DOWN = "FDT_DOWN"

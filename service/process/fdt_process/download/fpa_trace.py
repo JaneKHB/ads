@@ -13,7 +13,7 @@ import subprocess
 import time
 from typing import Union
 
-from config.app_config import D_SUCCESS, config_ini, D_ERROR, FDT_CURRENT_DIR, FDT_FPA_TRACE_REG_FOLDER, SECURITYINFO_PATH, D_SHUTDOWN, \
+from config.app_config import D_SUCCESS, config_ini, D_ERROR, FDT_CURRENT_DIR, FDT_FPA_TRACE_REG_FOLDER_DIR, SECURITYINFO_PATH, D_SHUTDOWN, \
     D_REDIS_SHUTDOWN_KEY
 from service.db.db_service import db_file_download_log
 from service.ini.ini_service import get_ini_value
@@ -43,7 +43,7 @@ class FdtFpaTrace:
         self.fpatrace_dir = get_ini_value(config_ini, "EEC", "EEC_FPA_TRACE_DIR")
 
         self.logtitle = get_ini_value(config_ini, "EEC", "EEC_FPA_TRACE_LOGTITLE")  # C6_AUXCF_
-        self.reg_folder = FDT_FPA_TRACE_REG_FOLDER
+        self.reg_folder = FDT_FPA_TRACE_REG_FOLDER_DIR
 
         self.cntlmt = 4  # ダウンロード上限数
         self.retry_max = 5  # rem リトライ上限

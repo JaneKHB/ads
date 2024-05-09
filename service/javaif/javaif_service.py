@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from config.app_config import D_ERROR, D_SUCCESS, FDT_FCS_HOME, FDT_MOVEINORDEROFOLDNESSPATH, devlog_dir
+from config.app_config import D_ERROR, D_SUCCESS, FDT_FCS_HOME_DIR, FDT_MOVEINORDEROFOLDNESSPATH, devlog_dir
 from service.common.common_service import rmdir_func
 
 
@@ -17,7 +17,7 @@ def javaif_execute(logger, modelid, toolid, reg_folder, eesp_var):
     os.makedirs(log_dir, exist_ok=True)
     log_name = f"fcsload_{toolid}.log"
 
-    fcs_home = FDT_FCS_HOME
+    fcs_home = FDT_FCS_HOME_DIR
     fcs_lib = os.path.join(fcs_home, "lib")
     fcs_log_conf = f"{toolid}.logcollect.logging.properties"
 
@@ -34,7 +34,7 @@ def javaif_execute(logger, modelid, toolid, reg_folder, eesp_var):
                               f"{log_dir}{os.sep}{log_name}"]
 
     elif modelid == 2:
-        # java -Djp.canon.cks.eesp.fcs_home=%FCS_HOME% -Djp.canon.cks.eesp.eesp_var=%EESP_VAR% -Djava.util.logging.config.file=%FCS_HOME%\conf\%FCS_LOG_CONF% -cp %FCS_LIB%\fcs.jar jp.co.canon.cks.eesp.fcs.logcollect.otslog.OTSLogCollectMain %REG_FOLDER% %TOOLID%
+        # java -Djp.canon.cks.eesp.fcs_home=%FCS_HOME% -Djp.canon.cks.eesp.eesp_var=%EESP_VAR% -Djava.utils.logging.config.file=%FCS_HOME%\conf\%FCS_LOG_CONF% -cp %FCS_LIB%\fcs.jar jp.co.canon.cks.eesp.fcs.logcollect.otslog.OTSLogCollectMain %REG_FOLDER% %TOOLID%
         subprocess_command = [f"java",
                               f"-Djp.canon.cks.eesp.fcs_home={fcs_home}",
                               f"-Djp.canon.cks.eesp.eesp_var={eesp_var}",
@@ -44,7 +44,7 @@ def javaif_execute(logger, modelid, toolid, reg_folder, eesp_var):
                               f"{reg_folder}",
                               f"{toolid}"]
     elif modelid == 3:
-        # java -Djp.canon.cks.eesp.fcs_home=%FCS_HOME% -Djp.canon.cks.eesp.eesp_var=%EESP_VAR% -Djava.util.logging.config.file=%FCS_HOME%\conf\%FCS_LOG_CONF% -cp %FCS_LIB%\fcs.jar jp.co.canon.cks.eesp.fcs.logcollect.otslog.OTSLogCollectMain %REG_FOLDER%_ComErr %TOOLID%
+        # java -Djp.canon.cks.eesp.fcs_home=%FCS_HOME% -Djp.canon.cks.eesp.eesp_var=%EESP_VAR% -Djava.utils.logging.config.file=%FCS_HOME%\conf\%FCS_LOG_CONF% -cp %FCS_LIB%\fcs.jar jp.co.canon.cks.eesp.fcs.logcollect.otslog.OTSLogCollectMain %REG_FOLDER%_ComErr %TOOLID%
         subprocess_command = [f"java",
                               f"-Djp.canon.cks.eesp.fcs_home={fcs_home}",
                               f"-Djp.canon.cks.eesp.eesp_var={eesp_var}",

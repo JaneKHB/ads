@@ -8,22 +8,21 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import os
-import subprocess
-import time
 import shutil
 import random
 import datetime
 import xml.etree.ElementTree as elemTree
 
 import config.app_config as config
-import util.time_util as time_util
+import common.utils as util
+import common.decorators.common_deco as common
 
 from typing import Union
 from pathlib import Path
 
 from service.ini.ini_service import get_ini_value
 from service.remote.remote_service import isExistWget
-from service.remote.request import request_subprocess, esp_upload
+from service.remote.request import wget_by_subprocess, esp_upload
 from service.security.security_service import security_info
 from service.common.common_service import create_ulfile_tmp, file_size_logging, get_csv_info
 
@@ -40,18 +39,21 @@ class CollectFileUpload:
         self.upload_dir = Path(config.LIPLUS_UPLOAD_CURRENT_DIR, "Upload")
         self.log_name = "uploadResult.log"
         self.log_transfer = "file_transfer.log"
-        self.timeout_second = int(get_ini_value(config.config_ini, "EEC", "LIPLUS_ESP_TIME_OUT"))
+        self.timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_TIME_OUT"))
 
         self.tool_df = get_csv_info("LIPLUS", "UPLOAD")
 
-        self.retry_max = int(get_ini_value(config.config_ini, "EEC", "DOWNLOAD_RETRY_CNT"))
+        self.retry_max = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_UPLOAD_RETRY_CNT"))
         self.retry_sleep = 2
 
         self.securityinfo_path = config.SECURITYINFO_PATH
         self.securitykey_path = get_ini_value(config.config_ini, "SECURITY", "SECURITYKEY_PATH")
         self.twofactor = {}
 
-    def start(self):
+    @common.check_process_time
+    @common.rename(config.PROC_NAME_LIPLUS_UPLOAD)
+    def start(self, logger):
+
         self.upload_dir.mkdir(exist_ok=True)
 
         for _, elem in self.tool_df.iterrows():
@@ -68,45 +70,48 @@ class CollectFileUpload:
             # rem  5:%%m : RemoteFab名 (置換後)
             # rem --------------------------------------------------------------
 
-            localfab_name = elem.get('localfab')
-            remotefab_name = str(elem.get('remotefab')).replace(' ', '')
+            try:
+                localfab_name = elem.get('localfab')
+                remotefab_name = str(elem.get('remotefab')).replace(' ', '')
 
-            # XML File move
-            for f in self.ondemand_dir.iterdir():
-                if f.suffix == '.xml':
-                    try:
-                        shutil.move(f, os.path.join(self.upload_dir.absolute(), f.name))
-                        self.logger.info(f"Move success: [{f}]")
-                    except Exception as e:
-                        # if the move fails, file not deleted and is moved at the next upload time.
-                        self.logger.info(f"Move failure: [{f}]")
-                        self.logger.error(e)
+                # XML File move
+                for f in self.ondemand_dir.iterdir():
+                    if f.suffix == '.xml':
+                        try:
+                            shutil.move(f, os.path.join(self.upload_dir.absolute(), f.name))
+                            self.logger.info(f"Move success: [{f}]")
+                        except Exception as e:
+                            # if the move fails, file not deleted and is moved at the next upload time.
+                            self.logger.warn(f"Move failure: [{f}]")
+                            self.logger.warn(e)
 
-            for f in self.upload_dir.iterdir():
-                if f.suffix == '.xml':
-                    # get Fab name from Collection Request File(XML)
-                    tree = elemTree.parse(f.absolute())
-                    ReqFabName = tree.find('Fab').text
+                for f in self.upload_dir.iterdir():
+                    if f.suffix == '.xml':
+                        # get Fab name from Collection Request File(XML)
+                        tree = elemTree.parse(f.absolute())
+                        ReqFabName = tree.find('Fab').text
 
-                    # If remote Fab name in UploadInfo.csv and the Fab name in XML match,
-                    # Replace the Fab names in XML with the local Fab names in UploadInfo.csv.
-                    if remotefab_name == ReqFabName:
-                        with open(f.absolute(), "r+") as f_rw:
-                            line = f_rw.readlines()
-                            line = list(map(lambda x: x.replace(ReqFabName, localfab_name), line))
-                            f_rw.truncate(0)
-                            f_rw.seek(0)
-                            f_rw.write(''.join(line))
+                        # If remote Fab name in UploadInfo.csv and the Fab name in XML match,
+                        # Replace the Fab names in XML with the local Fab names in UploadInfo.csv.
+                        if remotefab_name == ReqFabName:
+                            with open(f.absolute(), "r+") as f_rw:
+                                line = f_rw.readlines()
+                                line = list(map(lambda x: x.replace(ReqFabName, localfab_name), line))
+                                f_rw.truncate(0)
+                                f_rw.seek(0)
+                                f_rw.write(''.join(line))
 
-                    upload_result = self._upload_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), f.absolute())
+                        upload_result = self._upload_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), f.absolute())
 
-                    if upload_result == 0:
-                        # if upload success, remove file.
-                        self.logger.info(f"delete [{f}]")
-                        f.unlink()
-                    else:
-                        # if upload fails, file is not deleted and upload at the next upload time.
-                        self.logger.info(f"ERROR:!ERRORLEVEL! Upload failure:{f}")
+                        if upload_result == 0:
+                            # if upload success, remove file.
+                            self.logger.info(f"delete [{f}]")
+                            f.unlink()
+                        else:
+                            # if upload fails, file is not deleted and upload at the next upload time.
+                            self.logger.info(f"ERROR:!ERRORLEVEL! Upload failure:{f}")
+            except Exception as e:
+                self.logger.warn(e)
 
     # ADS\CollectRequestFileUpload\Upload_Tool.bat
     def _upload_tool(self, espaddr, userid, userpw, file_path):
@@ -135,8 +140,8 @@ class CollectFileUpload:
         time_now = datetime.datetime.now()
         # boundary create
         # set BOUNDARY=%random%%custDate%%random%%custTime%%random%
-        boundary = f"{random.randrange(0, 32767 + 1)}{time_now.strftime(time_util.TIME_FORMAT_5)}{random.randrange(0, 32767 + 1)}" \
-                   f"{time_now.strftime(time_util.TIME_FORMAT_6)[:-4]}{random.randrange(0, 32767 + 1)}"
+        boundary = f"{random.randrange(0, 32767 + 1)}{time_now.strftime(util.time_util.TIME_FORMAT_5)}{random.randrange(0, 32767 + 1)}" \
+                   f"{time_now.strftime(util.time_util.TIME_FORMAT_6)[:-4]}{random.randrange(0, 32767 + 1)}"
 
         file_tmp = create_ulfile_tmp(ulfile.absolute(), boundary)
 
@@ -169,7 +174,7 @@ class CollectFileUpload:
             # shlee todo twofactor
             upload_command = f'wget {header} {postfile} {url} -d -o {result_file.absolute()} -t 1 -T {self.timeout_second}'
             self.logger.info(f"wget upload command : {upload_command}")
-            upload_ret = request_subprocess(self.logger, upload_command, self.retry_max, self.retry_sleep)
+            upload_ret = wget_by_subprocess(self.logger, upload_command, self.retry_max, self.retry_sleep)
         else:
             header = {'Content-Type' : 'multipart/form-data',
                       'boundary' : boundary}

@@ -11,7 +11,7 @@ import os
 import time
 from typing import Union
 
-from config.app_config import D_SUCCESS, D_ERROR, FDT_CURRENT_DIR, FDT_ADS2_UPLOAD
+from config.app_config import D_SUCCESS, D_ERROR, FDT_CURRENT_DIR, FDT_ADS2_UPLOAD_DIR
 from service.javaif.javaif_service import javaif_execute
 from service.logger.db_logger_service import DbLogger
 from service.process.fdt_process.download.file_download import FdtFileDownload
@@ -26,7 +26,7 @@ class FdtFcsLoad:
         self.pno = pno
 
         self.current_dir = FDT_CURRENT_DIR
-        self.ads2_upload = FDT_ADS2_UPLOAD
+        self.ads2_upload = FDT_ADS2_UPLOAD_DIR
         self.tool_df = FdtFileDownload.get_tool_info()
 
         self.toolid = None  # 装置名

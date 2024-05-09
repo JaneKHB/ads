@@ -8,22 +8,20 @@
 # Copyright:   Copyright 2024. CANON Inc. all rights reserved.
 # ---------------------------------------------------------------------------
 import os
-import subprocess
-import time
 import pandas as pd
 
 from typing import Union
 from sys import platform
 
-# from config.app_config import LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, config_ini, \
-#     FILE_LOG_LIPLUS_TRANSFER_PATH
 import config.app_config as config
+import common.decorators.common_deco as common
+import common.utils as util
+
 from service.capa.capa_service import check_capacity
-from service.common.common_service import rmdir_func, get_csv_info, unzip_zipfile
+from service.common.common_service import rmdir_func, get_csv_info
 from service.ini.ini_service import get_ini_value
 from service.remote.ssh_manager import SSHManager
 from service.zip.sevenzip_service import unzip, isExist7zip
-
 
 class LiplusFileTransfer:
     def __init__(self, logger, pname, sname, pno: Union[int, None]):
@@ -39,13 +37,12 @@ class LiplusFileTransfer:
         self.toolid = None  # 装置名 (MachineName)
         self.reg_folder = None  # 正規フォルダパス (* Liplus Data Download Folder)
 
-    def start(self):
+    @common.check_process_time
+    @common.rename(config.PROC_NAME_LIPLUS_TRANSFER)
+    def start(self, logger):
         # Capacity Check
         if not check_capacity(config.PROC_NAME_LIPLUS_TRANSFER):
             return
-
-        # Processing Start Time
-        processing_start_time = time.time()
 
         for _, elem in self.tool_df.iterrows():
             # 	rem	--------------------------------------------------------------
@@ -58,17 +55,12 @@ class LiplusFileTransfer:
             # 	rem	--------------------------------------------------------------
             #
             # 	call %CURRENT_DIR%script\LiplusTransfer_Tool.bat %%i %%j "%%k" %CURRENT_DIR%
+            try:
+                self._liplus_transfer_tool(elem.get('toolid'), elem.get('ldb_dir'), elem.get('reg_folder'))
+            except Exception as e:
+                self.logger.warn(e)
 
-            self._liplus_transfer_tool(elem.get('toolid'), elem.get('ldb_dir'), elem.get('reg_folder'))
-
-        # Processing End Time
-        processing_end_time = time.time()
-        processing_time = processing_end_time - processing_start_time
-
-        # Processing Time logging
-        logger_header = f"[{self.toolid}]"
-        self.logger.info(f"{logger_header} Total time for the transfer process:{processing_time :.2f}[sec] ")
-
+    # ADS\Liplus_batch\script\LiplusTransfer_Tool.bat
     def _liplus_transfer_tool(self, toolid, ldb_dir, reg_folder):
         self.toolid = toolid  # 装置名 (MachineName)
         self.ldb_dir = ldb_dir  # LiplusDBサーバのデータ転送先 (LiplusDB transfer target. *[CSV 5th column])
@@ -80,13 +72,17 @@ class LiplusFileTransfer:
 
         ldb_dir = ldb_dir.replace("\\", "/")
         ldb_dit_split = ldb_dir.split("/", 4)
-        remote_liplus_ip = ldb_dit_split[2]
-        remote_liplus_dir = "/liplus/" + ldb_dit_split[4]
+        try:
+            remote_liplus_ip = ldb_dit_split[2]
+            remote_liplus_dir = "/liplus/" + ldb_dit_split[4]
+        except Exception as e:
+            self.logger.warn(f"{logger_header} {e}")
+            return
         ldb_user = get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_LDB_USER")
 
         # Liplus Data Download Folder
         if reg_folder == "" or pd.isna(reg_folder):
-            self.reg_folder = config.LIPLUS_REG_FOLDER_DEFAULT + "/" + self.toolid
+            self.reg_folder = config.LIPLUS_REG_FOLDER_DEFAULT_DIR + self.toolid
 
         # rem debug --------------
         self.logger.info(f"{logger_header} REMOTE_LIPLUS_IP: {remote_liplus_ip}")
@@ -125,7 +121,6 @@ class LiplusFileTransfer:
             unzip_dir = self.reg_folder + "/" + filename + "_temp"
 
             # Unzip File
-            unzip_start_time = time.time()
             unzip_cmd = ['7z', 'x', '-aoa', f'-o{unzip_dir}', file]
 
             # khb. FIXME. 7zip 명령어(array)를 linux 에서 사용 시, 압축이 풀리지 않는 현상 발생(x 옵션이 아닌 -h 옵션이 적용되는것같음)
@@ -134,8 +129,9 @@ class LiplusFileTransfer:
                 unzip_cmd[0] = '7zz'
                 unzip_cmd = " ".join(unzip_cmd)
 
+            self.logger.info(f"Start unzip '{file}'")
             if config.IS_USE_UNZIP_LIB:
-                unzip_ret = unzip_zipfile(self.logger, file, unzip_dir)
+                unzip_ret = util.zip_util.unzip(self.logger, file, unzip_dir)
             else:
                 unzip_ret = unzip(self.logger, unzip_cmd)
 
@@ -144,25 +140,20 @@ class LiplusFileTransfer:
                 self.logger.warn(f"{logger_header} The zip file is corrupted.")
                 break  # if unzip fail, then loop end
 
-            # Unzipping time
-            unzip_end_time = time.time()
-            unzip_time = unzip_end_time - unzip_start_time
-            self.logger.info(f"{logger_header} Unzipping time of a '{file}':{unzip_time:.3f}[sec]")
-
             # ZIP File Remove todo 원본은 여기서 지우는데 올바를까?
             # if os.path.exists(file):
             #     self.logger.info(f"{logger_header} rmdir '{file}'")
             #     os.remove(file)
 
             # File transfer starts.
-            self.logger.info(f"{logger_header} file transfer starts.")
-            transfer_start = time.time()
+            self.logger.info(f"{logger_header} Start file transfer from SCP to LiplusDB server.")
+            # transfer_start = time.time()
 
             try:
                 # scp transfer
                 ssh_client = SSHManager(self.logger)
                 ssh_client.create_ssh_client(ip=remote_liplus_ip, username=ldb_user, sshkey_path=self.sshkey_path)
-                ssh_client.send_all_file(local_folder=unzip_dir, remote_folder=remote_liplus_dir)
+                ssh_client.send_all_file(local_folder=unzip_dir, remote_folder=remote_liplus_dir, logger=self.logger)
                 ssh_client.close()
 
                 # SCP Transfer Success
@@ -172,8 +163,8 @@ class LiplusFileTransfer:
                 self.logger.error(f"{logger_header} errorcode:3000 msg:SCP transfer of '{file}' failed. {ex}")
 
             # SCP Transfer Time
-            transfer_end = time.time() - transfer_start
-            self.logger.info(f"{logger_header} SCP transfer time to LiplusDB server: :{transfer_end:.3f}[sec]")
+            # transfer_end = time.time() - transfer_start
+            # self.logger.info(f"{logger_header} SCP transfer time to LiplusDB server: :{transfer_end:.3f}[sec]")
 
             # Unzip Folder Remove
             rmdir_func(self.logger, unzip_dir)

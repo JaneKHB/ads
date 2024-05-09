@@ -3,10 +3,13 @@ import time
 import requests
 import subprocess
 
+import common.decorators.common_deco as common
+
 from config.app_config import D_SUCCESS, D_ERROR
 
 # subprocess
-def request_subprocess(logger, download_cmd, retry_max, retry_sleep):
+@common.check_process_time
+def wget_by_subprocess(logger, download_cmd, retry_max, retry_sleep):
     rtn = D_ERROR
     for _ in range(retry_max):
         rtn = subprocess_run(logger, download_cmd)
@@ -19,6 +22,7 @@ def request_subprocess(logger, download_cmd, retry_max, retry_sleep):
 
     return rtn
 
+@common.check_process_time
 def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep):
     rtn = D_ERROR
 
@@ -33,7 +37,7 @@ def esp_download(logger, url, fname, timeout, twofactor, retry_max, retry_sleep)
 
     return rtn
 
-
+@common.check_process_time
 def esp_upload(logger, url, heaer, file, timeout, twofactor, retry_max, retry_sleep):
     rtn = D_ERROR
 

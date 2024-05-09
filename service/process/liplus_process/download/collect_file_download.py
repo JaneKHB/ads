@@ -10,23 +10,23 @@
 import os
 from typing import Union
 import shutil
-import time
-import subprocess
 import datetime
-
-import config.app_config as config
-import util.time_util as time_util
 
 from pathlib import Path
 from sys import platform
 
+import config.app_config as config
+import common.utils as util
+
+import common.decorators.common_deco as common
+
 from service.capa.capa_service import check_capacity
 from service.ini.ini_service import get_ini_value
 from service.remote.remote_service import isExistWget
-from service.remote.request import request_subprocess, esp_download
+from service.remote.request import wget_by_subprocess, esp_download
 from service.remote.ssh_manager import SSHManager
 from service.security.security_service import security_info
-from service.common.common_service import file_size_logging, get_csv_info, rmtree, unzip_zipfile
+from service.common.common_service import file_size_logging, get_csv_info, rmtree
 from service.zip.sevenzip_service import unzip, isExist7zip
 
 
@@ -37,7 +37,7 @@ class CollectFileDownload:
         self.sname = sname
         self.pno = pno
 
-        self.download_log = Path(config.FILE_LOG_LIPLUS_PATH, "downloadResult.log")
+        self.download_log = Path(config.FILE_LOG_LIPLUS_DIR, "downloadResult.log")
 
         self.current_dir = config.LIPLUS_DOWNLOAD_CURRENT_DIR
         self.tool_df = get_csv_info("LIPLUS", "DOWNLOAD")
@@ -50,7 +50,7 @@ class CollectFileDownload:
         self.local_fab = None  # LocalFab名 (置換前)
         self.remote_fab = None  # RemoteFab名 (置換後)
 
-        self.retry_max = int(get_ini_value(config.config_ini, "EEC", "DOWNLOAD_RETRY_CNT"))
+        self.retry_max = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_DOWNLOAD_RETRY_CNT"))
         self.retry_sleep = 2
         self.ldb_user = "lpsuser"
         self.reg_folder = Path(self.current_dir, "Download")
@@ -61,13 +61,12 @@ class CollectFileDownload:
         self.securitykey_path = get_ini_value(config.config_ini, "SECURITY", "SECURITYKEY_PATH")
         self.twofactor = {}
 
-    def start(self):
+    @common.check_process_time
+    @common.rename(config.PROC_NAME_LIPLUS_DOWN)
+    def start(self, logger):
         # Capacity Check
         if not check_capacity(config.PROC_NAME_LIPLUS_DOWN):
             return
-
-        # Processing Start Time
-        processing_start_time = time.time()
 
         for _, elem in self.tool_df.iterrows():
             # rem --------------------------------------------------------------
@@ -77,15 +76,10 @@ class CollectFileDownload:
             # rem  4:%%l : LocalFab名（置換前）
             # rem  5:%%m : RemoteFab名（置換後）
             # rem --------------------------------------------------------------
-
-            self._liplus_get_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), elem.get('localfab'), elem.get('remotefab'))
-
-        # Processing End Time
-        processing_end_time = time.time()
-        processing_time = processing_end_time - processing_start_time
-
-        # Processing Time logging
-        self.logger.info(f"Total time for the collection process:{processing_time :.2f}[sec] ")
+            try:
+                self._liplus_get_tool(elem.get('espaddr'), elem.get('userid'), elem.get('userpasswd'), elem.get('localfab'), elem.get('remotefab'))
+            except Exception as e:
+                self.logger.warn(e)
 
     # ADS\OnDemandCollectDownload\LiplusGet_Tool.bat
     def _liplus_get_tool(self, espaddr, userid, userpasswd, local_fab, remote_fab):
@@ -155,9 +149,10 @@ class CollectFileDownload:
         # khb. todo. "result.tmp" 는 파일 이름(ESP 에서 제공하는 실제 파일 이름)을 획득하기 위해 사용되는것으로 판단됨. request 모듈로도 가능한지 체크 필요.
         if config.IS_USE_WGET:
             self.logger.info(f"wget download command : {download_command}")
-            download_ret = request_subprocess(self.logger, download_command, self.retry_max, self.retry_sleep)
+            download_ret = wget_by_subprocess(self.logger, download_command, self.retry_max, self.retry_sleep)
         else:
-            self.logger.info(f"download URL : {url}")
+            # 위에 로그 있어서 주석처리
+            # self.logger.info(f"download URL : {url}")
             download_ret = esp_download(self.logger, url, self.download_file.absolute(), self.timeout_second,
                                     self.twofactor, self.retry_max, self.retry_sleep)
 
@@ -176,8 +171,12 @@ class CollectFileDownload:
             return
 
         # rename. tmp_download.zip ==> ESP download file name
-        self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
-        self.logger.info(f"rename [{self.download_file.absolute()}] -> [{collect_file_name}]")
+        try:
+            if self.download_file.exists():
+                self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
+                self.logger.info(f"rename [{self.download_file.absolute()}] -> [{collect_file_name}]")
+        except Exception as e:
+            self.logger.warn(e)
 
         if download_ret == config.D_SUCCESS:
             # call upload_ok
@@ -216,9 +215,14 @@ class CollectFileDownload:
 
                 # Separate ZIP file names with "#" as delimiter
                 tokens = zip_filename.split("#")
-                fab_name = tokens[0]
-                tool_num = tokens[1]
-                remote_liplus_ip = tokens[2]
+                try:
+                    fab_name = tokens[0]
+                    tool_num = tokens[1]
+                    remote_liplus_ip = tokens[2]
+                except Exception as e:
+                    self.logger.warn(e)
+                    self.logger.warn(f"{f.absolute()} file name split fail")
+                    continue
 
                 if self.local_fab == fab_name:
                     fab_name = self.remote_fab
@@ -235,7 +239,6 @@ class CollectFileDownload:
                     unzip_dir = Path(self.reg_folder.absolute(), zip_filename)
 
                     # Unzip File
-                    unzip_start_time = time.time()
                     unzip_cmd = ["7z", "x", "-aoa", f"-o{unzip_dir.absolute()}", str(zip_fullpath)]
                     # khb. FIXME. 7zip 명령어(array)를 linux 에서 사용 시, 압축이 풀리지 않는 현상 발생(x 옵션이 아닌 -h 옵션이 적용되는것같음)
                     # khb. FIXME. 해당 기능(7zz x -aoa ...) 에 대해서는 Array 가 아닌 String 으로 처리한다.
@@ -243,8 +246,9 @@ class CollectFileDownload:
                         unzip_cmd[0] = '7zz'
                         unzip_cmd = " ".join(unzip_cmd)
 
+                    self.logger.info(f"Start unzip [{f}]")
                     if config.IS_USE_UNZIP_LIB:
-                        unzip_ret = unzip_zipfile(self.logger, zip_fullpath, unzip_dir.absolute())
+                        unzip_ret = util.zip_util.unzip(self.logger, zip_fullpath, unzip_dir.absolute())
                     else:
                         unzip_ret = unzip(self.logger, unzip_cmd)
 
@@ -252,14 +256,9 @@ class CollectFileDownload:
                     if unzip_ret != 0:
                         self.logger.warn(f"The zip file is corrupted.")
 
-                    # Unzipping time
-                    unzip_end_time = time.time()
-                    unzip_time = unzip_end_time - unzip_start_time
-                    self.logger.info(f"Unzipping time of a [{f}]:{unzip_time:.3f}[sec]")
-
                     # if target_folder
                     # REM 압축 해제의 성공 여부는 압축 해제 대상 파일의 유무로 판단한다.
-                    unzip_cnt = sum(1 for cf in unzip_dir.iterdir())
+                    unzip_cnt = sum(1 for _ in unzip_dir.iterdir())
                     self.logger.info(f"Expanded file count:{unzip_cnt}")
 
                     if unzip_cnt > 0:
@@ -270,7 +269,7 @@ class CollectFileDownload:
                         self.logger.info(f"[{f}] :unzip success")
                         self.logger.info(f"file transfer starts.")
 
-                        tick_scp_start = time.time()
+                        self.logger.info(f"Start file transfer to LiplusDB server")
                         try:
                             # scp transfer
                             ssh_client = SSHManager(self.logger)
@@ -287,9 +286,6 @@ class CollectFileDownload:
                             # SCP Transfer Fail
                             self.logger.info(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed. {ex}")
 
-                        tick_scp_end = time.time() - tick_scp_start
-                        self.logger.info(f"Transfer time to LiplusDB server:{tick_scp_end}[sec]")
-
                         rmtree(unzip_dir.absolute())
                         self.logger.info(f"rmtree [{unzip_dir}]")
 
@@ -304,7 +300,7 @@ class CollectFileDownload:
                             #             os.path.join(self.zip_backup_folder, f.name))
                             shutil.move(f, os.path.join(self.zip_backup_folder, f.name))    # khb. todo. 동작하는지 확인 필요!
                         except Exception as e:
-                            self.logger.error(e)
+                            self.logger.warn(e)
 
                         rmtree(unzip_dir.absolute())
                         self.logger.info(f"rmtree {unzip_dir}")
@@ -344,9 +340,8 @@ class CollectFileDownload:
 
         if config.IS_USE_WGET:
             self.logger.info(f"wget next command : {download_next_command}")
-            download_ret = request_subprocess(self.logger, download_next_command, self.retry_max, self.retry_sleep)
+            download_ret = wget_by_subprocess(self.logger, download_next_command, self.retry_max, self.retry_sleep)
         else:
-            self.logger.info(f"request URL : {url}")
             download_ret = esp_download(self.logger, next_url, None, self.timeout_second, self.twofactor,
                                         self.retry_max, self.retry_sleep)
 
@@ -377,21 +372,22 @@ class CollectFileDownload:
             line = line.replace(comp_sharp, '#')
             return line
 
-        result_tmp_name = Path(f"tmp_result_{datetime.datetime.now().strftime(time_util.TIME_FORMAT_6)}.tmp")
-        with open(self.result_file.absolute(), 'r', errors='ignore') as log_file, \
-                open(result_tmp_name.absolute(), 'w', errors='ignore') as tmp_file:
-            for line in log_file:
-                decoded_line = decode_url_encoded_chars(line.strip())
-                tmp_file.write(decoded_line + '\n')
+        result_tmp_name = Path(f"tmp_result_{datetime.datetime.now().strftime(util.time_util.TIME_FORMAT_6)}.tmp")
+        if self.result_file.exists():
+            with open(self.result_file.absolute(), 'r', errors='ignore') as log_file, \
+                    open(result_tmp_name.absolute(), 'w', errors='ignore') as tmp_file:
+                for line in log_file:
+                    decoded_line = decode_url_encoded_chars(line.strip())
+                    tmp_file.write(decoded_line + '\n')
 
-        # filename=찾아서 뒤에 붙은 파일이름 가져옴.
-        with open(result_tmp_name.absolute(), "r", errors='ignore') as tmp_file:
-            for line in tmp_file:
-                if "filename=" in line:
-                    _, value = line.split("filename=")
-                    collect_file_name = value.strip()
-                    break
-        result_tmp_name.unlink(missing_ok=True)
+            # filename=찾아서 뒤에 붙은 파일이름 가져옴.
+            with open(result_tmp_name.absolute(), "r", errors='ignore') as tmp_file:
+                for line in tmp_file:
+                    if "filename=" in line:
+                        _, value = line.split("filename=")
+                        collect_file_name = value.strip()
+                        break
+            result_tmp_name.unlink(missing_ok=True)
 
         return collect_file_name
 

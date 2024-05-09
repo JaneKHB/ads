@@ -11,7 +11,7 @@
 import time
 import signal
 
-import service.logger.logger_service as log
+import common.loggers.common_logger as log
 import config.app_config as config
 
 from typing import Union
@@ -20,7 +20,7 @@ from service.process.liplus_process.upload.collect_file_upload import CollectFil
 from service.ini.ini_service import get_ini_value
 
 exit_flag = False   # subprocess Exit Flag
-loop_interval = int(get_ini_value(config.config_ini, "EEC", "LIPLUS_COLLECTREQUESTFILEUPLOAD_CYCLE_TIME"))   # second
+loop_interval = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_UPLOAD_CYCLE_TIME"))   # second
 logger = log.TimedLogger(config.PROC_NAME_LIPLUS_UPLOAD, log.Setting(config.FILE_LOG_LIPLUS_UPLOAD_PATH))
 
 
@@ -41,7 +41,7 @@ def liplus_upload_loop(pname, sname, pno: Union[int, None]):
 
         # \ADS\CollectRequestFileUpload\Auto_Upload.bat
         obj = CollectFileUpload(logger, pname, sname, pno)
-        obj.start()
+        obj.start(logger)
 
         # break
         time.sleep(loop_interval)
@@ -52,5 +52,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, SignalHandler)
     signal.signal(signal.SIGTERM, SignalHandler)
 
+    # LIPLUS_ONDEMANDCOLLECTDOWNLOAD
     proc_name = config.PROC_NAME_LIPLUS_UPLOAD.split('_')
     liplus_upload_loop(proc_name[0], proc_name[1], None)

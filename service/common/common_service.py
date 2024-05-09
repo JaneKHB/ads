@@ -1,12 +1,10 @@
-import datetime
 import os
 import shutil
 import stat
-import zipfile
 
 import pandas as pd
 import config.app_config as config
-import service.logger.logger_service as log
+import common.loggers.common_logger as log
 
 from pathlib import Path
 from service.ini.ini_service import get_ini_value
@@ -92,7 +90,7 @@ def file_size_logging(logger, type, file_path, tool_id =""):
 
     # 로그경로, 파일 사이즈 초기화
     size_mb = None
-    log_path = Path(config.FILE_LOG_LIPLUS_FILE_TRANSFER)
+    log_path = Path(config.FILE_LOG_LIPLUS_FILE_TRANSFER_PATH)
     file = Path(file_path)
     if file.exists():
         size_mb = file.stat().st_size / (1024 * 1024)
@@ -159,36 +157,38 @@ def get_csv_info(module, type, pno=0):
 
     if module == "LIPLUS":
         if type == "UPLOAD":
-            file_path = config.LIPLUS_UPLOAD_INFO_CSV
+            file_path = config.LIPLUS_UPLOAD_INFO_CSV_PATH
             ini_section = module
             ini_key = "LIPLUS_UPLOAD_INFO_SKIP_LINE"
             read_names = config.LIPLUS_UPLOAD_INFO_HEADER
             read_dttype = config.LIPLUS_UPLOAD_DATA_TYPE
         elif type == "DOWNLOAD":
-            file_path = config.LIPLUS_DOWNLOAD_INFO_CSV
+            file_path = config.LIPLUS_DOWNLOAD_INFO_CSV_PATH
             ini_section = module
             ini_key = "LIPLUS_DOWNLOAD_INFO_SKIP_LINE"
             read_names = config.LIPLUS_DOWNLOAD_INFO_HEADER
             read_dttype = config.LIPLUS_DOWNLOAD_DATA_TYPE
         elif type == "GET" or type == "TRANSFER":
-            file_path = config.LIPLUS_TOOL_CSV.format(pno)
+            file_path = config.LIPLUS_TOOL_CSV_PATH.format(pno)
             ini_section = module
             ini_key = "LIPLUS_TOOL_INFO_SKIP_LINE"
             read_names = config.LIPLUS_TOOL_INFO_HEADER
             read_dttype = config.LIPLUS_TOOL_DATA_TYPE
-            pass
-        elif type == "TRANSFER":
-            pass
     elif module == "FDT":
         if type == "UPLOAD":
-            pass
+            file_path = config.FDT_UPTOOL_CSV_PATH
+            ini_section = "EEC"
+            ini_key = "EEC_UPTOOL_INFO_SKIP_LINE"
+            read_names = config.FDT_UPTOOL_INFO_HEADER
+            read_dttype = config.FDT_UPTOOL_DATA_TYPE
         elif type == "DOWNLOAD":
-            file_path = config.FDT_TOOL_CSV
-            ini_section = module
+            file_path = config.FDT_TOOL_CSV_PATH
+            ini_section = "EEC"
             ini_key = "EEC_TOOL_INFO_SKIP_LINE"
             read_names = config.FDT_TOOL_INFO_HEADER
             read_dttype = config.FDT_TOOL_DATA_TYPE
-        pass
+
+    verification_csv()
 
     skiprows = int(get_ini_value(config.config_ini, ini_section, ini_key))
     tool_df = pd.read_csv(file_path, names=read_names, dtype=read_dttype,
@@ -196,16 +196,6 @@ def get_csv_info(module, type, pno=0):
                           skiprows=skiprows, sep=',', index_col=False)
     return tool_df
 
-def unzip_zipfile(logger, zip_path, des_path):
-    try:
-        if not Path(zip_path).exists():
-            logger.info("This is the wrong path.")
-            return -1
-
-        with zipfile.ZipFile(zip_path) as z:
-            z.extractall(des_path)
-        return 0
-
-    except Exception as e:
-        logger.error(f"unzip unknown error. {e}")
-        return -1
+def verification_csv():
+    # shlee todo verification_csv
+    pass

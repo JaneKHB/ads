@@ -10,7 +10,7 @@
 import os
 import shutil
 
-from config.app_config import FDT_CURRENT_DIR, FDT_ADS2_UPLOAD
+from config.app_config import FDT_CURRENT_DIR, FDT_ADS2_UPLOAD_DIR
 from service.logger.db_logger_service import DbLogger
 from service.process.fdt_process.download.file_download import FdtFileDownload
 
@@ -23,7 +23,7 @@ class FdtComErrMove:
         self.pno = pno
 
         self.current_dir = FDT_CURRENT_DIR
-        self.ads2_upload = FDT_ADS2_UPLOAD
+        self.ads2_upload = FDT_ADS2_UPLOAD_DIR
         self.tool_df = FdtFileDownload.get_tool_info()
 
         self.toolid = None  # 装置名

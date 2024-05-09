@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 import os
 
-from config.app_config import config_ini, FDT_CURRENT_DIR, D_SHUTDOWN, D_SUCCESS, FDT_ADS2_FOLDER, FDT_ADS2_UPLOAD, D_REDIS_SHUTDOWN_KEY
+from config.app_config import config_ini, FDT_CURRENT_DIR, D_SHUTDOWN, D_SUCCESS, FDT_ADS2_FOLDER_DIR, FDT_ADS2_UPLOAD_DIR, D_REDIS_SHUTDOWN_KEY
 from service.common.common_service import xcopy_file_to_dir, rmdir_func
 from service.zip.gz_service import gz_uncompress
 from service.ini.ini_service import get_ini_value
@@ -26,8 +26,8 @@ class FdtMoveFromAds:
         self.pno = pno
 
         self.current_dir = FDT_CURRENT_DIR
-        self.ads2_folder = FDT_ADS2_FOLDER  # "C:\\ADS\\LOG\\temp"
-        self.ads2_upload = FDT_ADS2_UPLOAD  # "C:\\ADS\\LOG\\Upload"
+        self.ads2_folder = FDT_ADS2_FOLDER_DIR  # "C:\\ADS\\LOG\\temp"
+        self.ads2_upload = FDT_ADS2_UPLOAD_DIR  # "C:\\ADS\\LOG\\Upload"
         self.tool_df = FdtFileDownload.get_tool_info(get_ini_value(config_ini, "EEC", "EEC_TOOL_INFO_COM_ERR_SKIP_LINE"))
 
     def start(self):

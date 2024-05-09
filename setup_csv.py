@@ -1,11 +1,11 @@
 import datetime
 import os
 import shutil
-import inspect
+import sys
 
 import config.app_config as config
-import util.time_util as time_util
-import service.logger.logger_service as log
+import common.utils as util
+import common.loggers.common_logger as log
 
 from pathlib import Path
 
@@ -38,9 +38,9 @@ def copy_csv(original_csv_path, base_dir):
     dir_name = ""
     csv_type = 0
     task_type = 0
-    copy_from_dir = Path(config.CSV_ORIGINAL_PATH)
-    copy_to_dir = Path(config.CSV_REAL_PATH)
-    original_path = Path(config.CONFIG_PATH)
+    copy_from_dir = Path(config.CSV_ORIGINAL_DIR)
+    copy_to_dir = Path(config.CSV_REAL_DIR)
+    original_path = Path(config.CONFIG_DIR)
 
     if "Liplus_batch" in original_csv_path:
         # copy_from_dir = Path(copy_to_dir, "Liplus_batch")
@@ -311,13 +311,13 @@ def fdt_properties_gen(tool_name, temp_txt_name):
 def make_fdt():
     # REM fdt_batchのconfファイルを生成する
     # fdt_batch의 conf 파일 생성
-    fdt_conf_dir = Path(config.CSV_REAL_PATH, "fdt_batch", "fcs", "conf")
-    fdt_toolinfo_csv = Path(config.CSV_ORIGINAL_PATH, "fdt_batch_ToolINfo.csv")
-    temp_csv = Path(config.CSV_ORIGINAL_PATH, "TempToolName.csv")
-    temp_xml = Path(config.CSV_ORIGINAL_PATH, "fdt_conf_tmp", "TempToolNameConf.xml")
-    header_conf = Path(config.CSV_ORIGINAL_PATH, "FCC_Header.xml")
-    footer_conf = Path(config.CSV_ORIGINAL_PATH, "FCC_Footer.xml")
-    conf_xml = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_conf_tmp", "tmp_conf", "FileCollectConfig.xml")
+    fdt_conf_dir = Path(config.CSV_REAL_DIR, "fdt_batch", "fcs", "conf")
+    fdt_toolinfo_csv = Path(config.CSV_ORIGINAL_DIR, "fdt_batch_ToolINfo.csv")
+    temp_csv = Path(config.CSV_ORIGINAL_DIR, "TempToolName.csv")
+    temp_xml = Path(config.CSV_ORIGINAL_DIR, "fdt_conf_tmp", "TempToolNameConf.xml")
+    header_conf = Path(config.CSV_ORIGINAL_DIR, "FCC_Header.xml")
+    footer_conf = Path(config.CSV_ORIGINAL_DIR, "FCC_Footer.xml")
+    conf_xml = Path(config.CSV_ORIGINAL_DIR, "module", "fdt_conf_tmp", "tmp_conf", "FileCollectConfig.xml")
 
     get_csv(fdt_toolinfo_csv, temp_csv)
 
@@ -351,18 +351,18 @@ def make_fdt():
     try:
         shutil.move(conf_xml, Path(fdt_conf_dir, conf_xml.name))
     except Exception as e:
-        pass
+        logger.warn(e)
 
     # fdt_batchのpropertieファイルを生成する
     # fdt_batch의 property 파일 생성
-    temp_properties_dir = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp", "tmp_Properties")
+    temp_properties_dir = Path(config.CSV_ORIGINAL_DIR, "module", "fdt_properties_tmp", "tmp_Properties")
     temp_properties_dir.mkdir(exist_ok=True)
-    header_properties = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
+    header_properties = Path(config.CSV_ORIGINAL_DIR, "module", "fdt_properties_tmp",
                              "ToolName_Properties_Footer.txt")
-    footer_properties = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
+    footer_properties = Path(config.CSV_ORIGINAL_DIR, "module", "fdt_properties_tmp",
                              "ToolName_Properties_Footer.txt")
     for i in range(len(tool_name_list)):
-        temp_properties_file = Path(config.CSV_ORIGINAL_PATH, "module", "fdt_properties_tmp",
+        temp_properties_file = Path(config.CSV_ORIGINAL_DIR, "module", "fdt_properties_tmp",
                                     f"{tool_name_list[i]}_temp.txt")
         fdt_properties_gen(tool_name_list[i], temp_properties_file)
 
@@ -405,14 +405,14 @@ def setup_csv():
 
     # REM 各ディレクトリ定義
     # 각 디렉토리 정의
-    current_dir = Path(config.CONFIG_PATH)
-    target_dir = Path(config.CURRENT_PATH)
-    original_csv = Path(config.CSV_ORIGINAL_PATH)
+    current_dir = Path(config.CONFIG_DIR)
+    target_dir = Path(config.CURRENT_DIR)
+    original_csv = Path(config.CSV_ORIGINAL_DIR)
     original_setup_file_dir = Path(current_dir.absolute(), "Original_Setup_File")
     old_setup_file_dir = Path(current_dir.absolute(), "Old_Setup_File")
     # REM Old_Setup_Fileの中に作るフォルダの名前が一意になるようにする
     # Old_Setup_File 안에 만들 폴더의 이름이 고유하게 만들기
-    old_dir_name = Path(old_setup_file_dir, f"Old_Setup_File-{datetime.datetime.now().strftime(time_util.TIME_FORMAT_4)}")
+    old_dir_name = Path(old_setup_file_dir, f"Old_Setup_File-{datetime.datetime.now().strftime(util.time_util.TIME_FORMAT_4)}")
 
     # REM ショートカットを削除visual studio debug batch file
     # 바로가기 삭제
@@ -456,7 +456,7 @@ def setup_csv():
     
     # REM ADSセットアップスクリプトを展開する専用のフォルダを作成
     # ADS 설치 스크립트를 배포하는 전용 폴더 만들기
-    target_dir = Path(config.CURRENT_PATH)
+    target_dir = Path(config.CURRENT_DIR)
     target_dir.mkdir(exist_ok=True)
     logger.info(f"make dir [{target_dir.absolute()}]")
 
@@ -493,8 +493,8 @@ def setup_csv():
     # make_liplus_shortcut(current_dir, target_dir)
 
     # copy python source
-    original_source = Path(config.ORIGINAL_SOURCE_PATH)
-    to_source = Path(config.CURRENT_PATH, original_source.name)
+    original_source = Path(config.ORIGINAL_SOURCE_DIR)
+    to_source = Path(config.CURRENT_DIR, original_source.name)
     shutil.copytree(original_source.absolute(), to_source.absolute())
 
     fs_log = Path(target_dir.absolute(), "FSLOG")
@@ -515,5 +515,10 @@ if __name__ == '__main__':
     logger = log.TimedLogger(config.PROC_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
     logger.info("--------------------START SETUP CSV--------------------")
-    setup_csv()
+    try:
+        setup_csv()
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        logger.warn(f"{exc_type}, {fname}, {exc_tb.tb_lineno}")
     logger.info("---------------------END SETUP CSV---------------------")

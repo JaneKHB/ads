@@ -11,7 +11,7 @@ import os
 import shutil
 from typing import Union
 
-from config.app_config import D_ERROR, D_SUCCESS, config_ini, FDT_CURRENT_DIR, D_SHUTDOWN, FDT_ADS2_FOLDER, D_REDIS_SHUTDOWN_KEY
+from config.app_config import D_ERROR, D_SUCCESS, config_ini, FDT_CURRENT_DIR, D_SHUTDOWN, FDT_ADS2_FOLDER_DIR, D_REDIS_SHUTDOWN_KEY
 from service.zip.gz_service import gz_compress
 from service.ini.ini_service import get_ini_value
 from service.logger.db_logger_service import DbLogger
@@ -27,7 +27,7 @@ class FdtMoveToAds2:
         self.pno = pno
 
         self.current_dir = FDT_CURRENT_DIR
-        self.ads2_folder = FDT_ADS2_FOLDER  # "C:\\ADS\\LOG\\temp"
+        self.ads2_folder = FDT_ADS2_FOLDER_DIR  # "C:\\ADS\\LOG\\temp"
         self.tool_df = FdtFileDownload.get_tool_info(get_ini_value(config_ini, "EEC", "EEC_TOOL_INFO_COM_ERR_SKIP_LINE"))
 
         self.toolid = None  # 装置名 장치이름

@@ -79,15 +79,15 @@ def make_logger_folder():
     # fdt devlog
     # ....
 
-    os.makedirs(os.path.dirname(config.FILE_LOG_PATH), exist_ok=True)          # devlog default
-    os.makedirs(os.path.dirname(config.FILE_LOG_LIPLUS_PATH), exist_ok=True)   # devlog liplus
+    os.makedirs(os.path.dirname(config.FILE_LOG_PATH_DIR), exist_ok=True)          # devlog default
+    os.makedirs(os.path.dirname(config.FILE_LOG_LIPLUS_DIR), exist_ok=True)   # devlog liplus
     # os.makedirs(os.path.dirname(config.CHECK_CAPA_CURRENT_DIR), exist_ok=True) # capa check
 
     print("make logger folder success")
 
 def search_liplus_toolinfo_csv():
-    search_path = Path(config.CSV_REAL_PATH)
-    search_title = config.LIPLUS_TOOL_CSV.split('{')[0]
+    search_path = Path(config.CSV_REAL_DIR)
+    search_title = config.LIPLUS_TOOL_CSV_PATH.split('{')[0]
     files = []
     if search_path.exists():
         files = [f for f in search_path.iterdir() if f.suffix == '.csv' and search_title in f.name]
@@ -99,7 +99,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, SignalHandler)
 
     # LiplusToolInfo*.csv 파일 개수 읽기
-
     liplus_cnt = search_liplus_toolinfo_csv()
 
     # 폴더 생성
@@ -115,8 +114,8 @@ if __name__ == '__main__':
     # RunSubProcess("./service/process/proc_fdt_upload.py", get_ini_value(config_ini, "GLOBAL", "EEC_UPLOAD_ENABLE"))
     RunSubProcess("./service/process/liplus_process/get/liplus_get_loop.py", get_ini_value(config.config_ini, "GLOBAL", "LIPLUS_GET_ENABLE"), liplus_cnt)
     RunSubProcess("./service/process/liplus_process/transfer/liplus_transfer_loop.py", get_ini_value(config.config_ini, "GLOBAL", "LIPLUS_TRANSFER_ENABLE"), liplus_cnt)
-    RunSubProcess("./service/process/liplus_process/download/liplus_download_loop.py", get_ini_value(config.config_ini, "GLOBAL", "LIPLUS_ONDEMANDCOLLECTDOWNLOAD_ENABLE"))
-    RunSubProcess("./service/process/liplus_process/upload/liplus_upload_loop.py", get_ini_value(config.config_ini, "GLOBAL", "LIPLUS_COLLECTREQUESTFILEUPLOAD_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/download/liplus_download_loop.py", get_ini_value(config.config_ini, "GLOBAL", "LIPLUS_DOWNLOAD_ENABLE"))
+    RunSubProcess("./service/process/liplus_process/upload/liplus_upload_loop.py", get_ini_value(config.config_ini, "GLOBAL", "LIPLUS_UPLOAD_ENABLE"))
 
     # check exit flag
     CheckExitFlag()

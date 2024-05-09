@@ -98,7 +98,7 @@ def copy_process_script():
     shutil.copytree('process', config.PROCESS_ROOT)
 
     # 【client JobのDocker削除によるMultiProcess実行】
-    process_main = config.FS_ROOT+os.sep+config.PROCESS_SCRIPT
+    process_main = config.FS_ROOT_DIR + os.sep + config.PROCESS_SCRIPT
     if os.path.exists(process_main):
         os.remove(process_main)
     shutil.copy(config.PROCESS_SCRIPT, process_main)

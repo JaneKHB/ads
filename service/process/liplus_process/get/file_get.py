@@ -10,19 +10,20 @@
 import datetime
 import os
 import shutil
-import time
 import pandas as pd
+
 from typing import Union
 from pathlib import Path
 from sys import platform
 
-# from config.app_config import D_SUCCESS, config_ini, SECURITYINFO_PATH, \
-#     LIPLUS_CURRENT_DIR, LIPLUS_REG_FOLDER_DEFAULT, LIPLUS_REG_FOLDER_TMP, FILE_LOG_LIPLUS_GET_PATH, FILE_LOG_PATH
 import config.app_config as config
+import common.decorators.common_deco as common
+import common.utils as util
+
 from service.capa.capa_service import check_capacity
-from service.common.common_service import check_unknown, rmdir_func, get_csv_info, unzip_zipfile
+from service.common.common_service import check_unknown, rmdir_func, get_csv_info, file_size_logging
 from service.remote.remote_service import isExistWget
-from service.remote.request import esp_download, subprocess_run, request_subprocess
+from service.remote.request import esp_download, wget_by_subprocess
 from service.ini.ini_service import get_ini_value
 from service.security.security_service import security_info
 from service.zip.sevenzip_service import unzip, isExist7zip
@@ -46,7 +47,7 @@ class LiplusFileGet:
         self.userid = None  # ユーザID (User Id)
         self.userpasswd = None  # ユーザパスワード (User Password)
 
-        self.retry_max = int(get_ini_value(config.config_ini, "EEC", "DOWNLOAD_RETRY_CNT"))  # rem リトライ上限 (Retry Limit)
+        self.retry_max = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_GET_RETRY_CNT"))  # rem リトライ上限 (Retry Limit)
         self.retry_sleep = 2  # rem リトライ時のスリープ時間 (Retry Sleep Time)
 
         # REM 2要素認証の利用有無を判別 (two Factor Auth)
@@ -56,13 +57,12 @@ class LiplusFileGet:
 
         self.logger_header = ""
 
-    def start(self):
+    @common.check_process_time
+    @common.rename(config.PROC_NAME_LIPLUS_GET)
+    def start(self, logger):
         # Capacity Check
         if not check_capacity(config.PROC_NAME_LIPLUS_GET):
             return
-
-        # Processing Start Time
-        processing_start_time = time.time()
 
         for _, elem in self.tool_df.iterrows():
             # 	rem	設定ファイル「LiplusTool.csv」から、
@@ -77,17 +77,11 @@ class LiplusFileGet:
             # 	rem	 8:%%o : ADSサーバー内の保存先パス
             # 	rem	--------------------------------------------------------------
             # 	call %CURRENT_DIR%script\LiplusGet_Tool.bat %%i %%j %%k %%l %%m %%n "%%o" %CURRENT_DIR%
-
-            self._liplus_get_tool(elem.get('ca_name'), elem.get('toolid'), elem.get('espaddr'), elem.get('cntlmt'),
-                                 elem.get('userid'), elem.get('userpasswd'), elem.get('reg_folder'))
-
-        # Processing End Time
-        processing_end_time = time.time()
-        processing_time = processing_end_time - processing_start_time
-
-        # Processing Time logging
-        self.logger_header = f"[{self.toolid}]"
-        self.logger.info(f"{self.logger_header} Total time for the collection process:{processing_time :.2f}[sec] ")
+            try:
+                self._liplus_get_tool(elem.get('ca_name'), elem.get('toolid'), elem.get('espaddr'), elem.get('cntlmt'),
+                                     elem.get('userid'), elem.get('userpasswd'), elem.get('reg_folder'))
+            except Exception as e:
+                self.logger.warn(e)
 
     # ADS\Liplus_batch\script\LiplusGet_Tool.bat
     def _liplus_get_tool(self, ca_name, toolid, espaddr, cntlmt, userid, userpasswd, reg_folder):
@@ -98,7 +92,7 @@ class LiplusFileGet:
         self.userid = userid  # ユーザID (User Id)
         self.userpasswd = userpasswd  # ユーザパスワード (User Password)
 
-        debug_log_path = Path(config.FILE_LOG_PATH, f"{toolid}_debug.log")
+        debug_log_path = Path(config.FILE_LOG_PATH_DIR, f"{toolid}_debug.log")
 
         protocol = "http"
         timeout_second = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_ESP_TIME_OUT"))
@@ -109,10 +103,10 @@ class LiplusFileGet:
 
         # Liplus Data Download Folder
         if reg_folder == "" or pd.isna(reg_folder):
-            self.reg_folder = config.LIPLUS_REG_FOLDER_DEFAULT + self.toolid
+            self.reg_folder = config.LIPLUS_REG_FOLDER_DEFAULT_DIR + self.toolid
 
         # Liplus Data Temp Folder
-        reg_folder_tmp = config.LIPLUS_REG_FOLDER_TMP + f"{self.toolid}_Get"
+        reg_folder_tmp = config.LIPLUS_REG_FOLDER_TMP_DIR + f"{self.toolid}_Get"
 
         # Check wget
         if isExistWget(self.logger) != 0:
@@ -165,13 +159,11 @@ class LiplusFileGet:
             fname = f"{reg_folder_tmp}/{self.toolid}-{datetimenow}.zip"
 
             # Call collection files download url
-            download_start_time = time.time()
-
             if config.IS_USE_WGET:
                 # shlee todo twofactor
                 command_base = f'wget "{base_url}" -a {debug_log_path.absolute()} -O {fname} -c -t 2 -T 10'
                 self.logger.info(f"wget command : {command_base}")
-                base_res = request_subprocess(self.logger, command_base, self.retry_max, self.retry_sleep)
+                base_res = wget_by_subprocess(self.logger, command_base, self.retry_max, self.retry_sleep)
             else:
                 self.logger.info(f"{self.logger_header} download URL : {base_url}")
                 base_res = esp_download(self.logger, base_url, fname, timeout_second, self.twofactor, self.retry_max, self.retry_sleep)
@@ -189,9 +181,6 @@ class LiplusFileGet:
                 self.logger.error(f"{self.logger_header} errorcode:2000 msg:Failed to retry collecting {fname} from ESP")
                 break
 
-            download_end_time = time.time()
-            download_time = download_end_time - download_start_time
-
             # Check File is Last. If Unknown returns, File is last. There are no more files to take.
             if check_unknown(fname):
                 self.logger.info(f"{self.logger_header} findstr \"Unknown\": true. '{fname}'")
@@ -200,7 +189,6 @@ class LiplusFileGet:
                 self.logger.info(f"{self.logger_header} findstr \"Unknown\": false. '{fname}'")
 
             # Unzip Downloaded File
-            unzip_start_time = time.time()
             unzip_cmd = ['7z', 'x', '-aoa', f'-o{reg_folder_tmp}', fname]
 
             # khb. FIXME. 7zip 명령어(array)를 linux 에서 사용 시, 압축이 풀리지 않는 현상 발생(x 옵션이 아닌 -h 옵션이 적용되는것같음)
@@ -209,8 +197,9 @@ class LiplusFileGet:
                 unzip_cmd[0] = '7zz'
                 unzip_cmd = " ".join(unzip_cmd)
 
+            self.logger.info(f"{self.logger_header} Start unzip '{fname}'")
             if config.IS_USE_UNZIP_LIB:
-                unzip_ret = unzip_zipfile(self.logger, fname, reg_folder_tmp)
+                unzip_ret = util.zip_util.unzip(self.logger, fname, reg_folder_tmp)
             else:
                 unzip_ret = unzip(self.logger, unzip_cmd)
 
@@ -219,14 +208,10 @@ class LiplusFileGet:
                 self.logger.warn(f"{self.logger_header} The zip file is corrupted.")
                 break   # if unzip fail, then loop end
 
-            # Unzipping time
-            unzip_end_time = time.time()
-            unzip_time = unzip_end_time - unzip_start_time
-            self.logger.info(f"{self.logger_header} Unzipping time of a '{fname}':{unzip_time:.3f}[sec]")
-
             # Logging downloaded files
-            size_bytes = os.path.getsize(fname)
-            self.logger.info(f"{self.logger_header} file size = {size_bytes} bytes. '{fname}'")
+            # size_bytes = os.path.getsize(fname)
+            # self.logger.info(f"{self.logger_header} file size = {size_bytes} bytes. '{fname}'")
+            file_size_logging(self.logger, "down", fname, self.toolid)
 
             # Call collection files NEXT url
             self.logger.info(f"{self.logger_header} NXT URL : {next_url}")
@@ -236,7 +221,7 @@ class LiplusFileGet:
                 # shlee todo twofactor
                 command_next = f'wget "{next_url}" -a {debug_log_path.absolute()} -O {dummy_fname} -c -t 2 -T 10'
                 self.logger.info(f"wget command : {command_next}")
-                next_res = request_subprocess(self.logger, command_next, self.retry_max, self.retry_sleep)
+                next_res = wget_by_subprocess(self.logger, command_next, self.retry_max, self.retry_sleep)
             else:
                 next_res = esp_download(self.logger, next_url, dummy_fname, timeout_second, self.twofactor, self.retry_max,
                                    self.retry_sleep)
@@ -283,7 +268,6 @@ class LiplusFileGet:
         # Remove reg_folder_tmp
         rmdir_func(self.logger, reg_folder_tmp)
         self.logger.info(f"{self.logger_header} rmdir '{reg_folder_tmp}'")
-
         self.logger.info(f"{self.logger_header} LiplusGet_Tool Finished")
 
     def _req(self):
