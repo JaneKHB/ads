@@ -19,7 +19,7 @@ from service.process.liplus_process.download.collect_file_download import Collec
 
 exit_flag = False   # subprocess Exit Flag
 loop_interval = 5   # second
-logger = log.FileLogger("LIPLUS_DOWN", log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
+logger = log.FileLogger("LIPLUS_ONDEMANDCOLLECTDOWNLOAD", log.Setting(config.FILE_LOG_LIPLUS_DOWNLOAD_PATH))
 
 
 def SignalHandler(signum, frame):

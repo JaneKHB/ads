@@ -200,12 +200,12 @@ class CollectFileDownload:
                 collect_file_name = self._get_collect_file_name()
                 self.download_file.rename(Path(self.reg_folder.absolute(), collect_file_name))
 
-                self.logger.info("WARNING msg:Executed retry of file collection from ESP.")
+                self.logger.warn("WARNING msg:Executed retry of file collection from ESP.")
                 self.logger.info("wget retry end")
 
         # if download fail after retry, process ends
         if download_ret != 0:
-            self.logger.info(f"[adslog] ERROR errorcode:2000 msg:Failed to retry collecting {collect_file_name} from ESP.")
+            self.logger.error(f"[adslog] ERROR errorcode:2000 msg:Failed to retry collecting {collect_file_name} from ESP.")
             self._response_check(self.result_file.absolute(), is_error=True)
 
             # remove result.tmp, download file
