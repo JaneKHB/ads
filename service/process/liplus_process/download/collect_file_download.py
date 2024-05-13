@@ -106,7 +106,7 @@ class CollectFileDownload:
             return
 
         # Check 7zip
-        if not config.IS_USE_UNZIP_LIB and isExist7zip(self.logger) != 0:
+        if isExist7zip(self.logger) != 0:
             return
 
         # Check two Factor Auth
@@ -288,7 +288,7 @@ class CollectFileDownload:
                             f.unlink(missing_ok=True)
                         except Exception as ex:
                             # SCP Transfer Fail
-                            self.logger.info(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed. {ex}")
+                            self.logger.error(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed. {ex}")
 
                         rmtree(unzip_dir.absolute())
                         self.logger.info(f"rmtree [{unzip_dir}]")
@@ -297,14 +297,14 @@ class CollectFileDownload:
                     else:
                         # REM *** ZIPファイルの解凍失敗時はBackupフォルダへZIPファイルを移動する
                         # REM *** ZIP 파일의 압축을 풀지 못하면 Backup 폴더로 ZIP 파일을 이동합니다.
-                        self.logger.info(f"[{f}] :unzip failure")
+                        self.logger.warn(f"[{f}] :unzip failure")
                         self.logger.info(f"move [{f}] -> {self.zip_backup_folder}")
                         try:
                             # shutil.move(os.path.join(self.reg_folder.absolute(), f.name),
                             #             os.path.join(self.zip_backup_folder, f.name))
                             shutil.move(f, os.path.join(self.zip_backup_folder, f.name))    # khb. todo. 동작하는지 확인 필요!
                         except Exception as e:
-                            self.logger.warn(e)
+                            self.logger.error(e)
 
                         rmtree(unzip_dir.absolute())
                         self.logger.info(f"rmtree {unzip_dir}")
@@ -354,7 +354,7 @@ class CollectFileDownload:
         if download_ret == config.D_SUCCESS:
             self.logger.info("wget Next Request command success.")
         else:
-            self.logger.info("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
+            self.logger.error("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
             # 失敗時のログ出力(ErroCode)
             # 실패시 로그 출력 (ErroCode)
 
