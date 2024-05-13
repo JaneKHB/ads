@@ -119,15 +119,14 @@ def copy_csv(original_csv_path, base_dir):
         # shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "Capacity_Check"), copy_to_dir)
         # logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'Capacity_Check')}] -> [{copy_to_dir}]")
 
-    if not Path(original_csv_path).exists():
-        logger.warn(f"{original_csv_path} does not exist")
-        return
-
     # コマンドライン引数で受け取ったcsvを開く
     # 명령줄 인수로 받은 CSV 열기
     # '\n'포함 안함
     read_csv = None
     if csv_type != -1:
+        if not Path(original_csv_path).exists():
+            logger.warn(f"{original_csv_path} does not exist")
+            return
         with open(original_csv_path, "r", errors="ignore") as csv:
             read_csv = csv.read().splitlines()
         logger.info(f"read [{original_csv_path}]")
@@ -413,10 +412,6 @@ def setup_csv():
     target_dir = Path(config.CURRENT_DIR)
     original_csv = Path(config.CSV_ORIGINAL_DIR)
     original_setup_file_dir = Path(current_dir.absolute(), "Original_Setup_File")
-    old_setup_file_dir = Path(current_dir.absolute(), "Old_Setup_File")
-    # REM Old_Setup_Fileの中に作るフォルダの名前が一意になるようにする
-    # Old_Setup_File 안에 만들 폴더의 이름이 고유하게 만들기
-    old_dir_name = Path(old_setup_file_dir, f"Old_Setup_File-{datetime.datetime.now().strftime(util.time_util.TIME_FORMAT_4)}")
 
     # REM ショートカットを削除visual studio debug batch file
     # 바로가기 삭제
@@ -430,37 +425,9 @@ def setup_csv():
     # powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -Command "Start-Process %~f0 -Verb runas"
     # exit
     # )
-
-    # REM 既にフォルダが存在する場合はOLDへ移動
-    # 이미 폴더가 있으면 OLD로 이동
-    if target_dir.exists():
-        # REM 古いセットアップファイルを保持しておくためのフォルダを生成する
-        # 이전 설치 파일을 보관할 폴더 생성
-        os.makedirs(old_dir_name.absolute(), exist_ok=True)
-        logger.info(f"make dir [{old_dir_name.absolute()}]")
-
-        original_target = target_dir.absolute()
-        target_dir.rename(os.path.join(old_dir_name, target_dir.name))
-        logger.info(f"move [{original_target} -> {os.path.join(old_dir_name, target_dir.name)}]")
-
-        # for f in target_dir.iterdir():
-        #     old_dir_name_path = Path(old_dir_name, f)
-        #     if old_dir_name_path.exists():
-        #         old_dir_name_path.unlink(missing_ok=True)
-        #         logger.info(f"delete [{old_dir_name_path.absolute()}]")
-        #     try:
-        #         shutil.move(Path(target_dir.absolute(), f), old_dir_name_path.absolute())
-        #         logger.info(f"move [{target_dir.absolute()}] -> [{old_dir_name_path.absolute()}]")
-        #         shutil.copytree(target_dir.absolute(), old_dir_name.absolute())
-        #         logger.info(f"copytree [{target_dir.absolute()}] -> [{old_dir_name.absolute()}]")
-        #     except Exception as e:
-        #         logger.error(e)
-        #
-        # rmtree(target_dir.absolute())
     
     # REM ADSセットアップスクリプトを展開する専用のフォルダを作成
     # ADS 설치 스크립트를 배포하는 전용 폴더 만들기
-    target_dir = Path(config.CURRENT_DIR)
     target_dir.mkdir(exist_ok=True)
     logger.info(f"make dir [{target_dir.absolute()}]")
 
@@ -496,11 +463,6 @@ def setup_csv():
     # 바로가기 만들필요 없을듯?
     # make_liplus_shortcut(current_dir, target_dir)
 
-    # copy python source
-    original_source = Path(config.ORIGINAL_SOURCE_DIR)
-    to_source = Path(config.CURRENT_DIR, original_source.name)
-    shutil.copytree(original_source.absolute(), to_source.absolute())
-
     fs_log = Path(target_dir.absolute(), "FSLOG")
     ondemand = Path(target_dir.absolute(), "ondemand")
 
@@ -509,17 +471,58 @@ def setup_csv():
     ondemand.mkdir(exist_ok=True)
     logger.info(f"make dir [{ondemand.absolute()}]")
 
+def check_folder_exist():
+
+    try:
+        # REM 既にフォルダが存在する場合はOLDへ移動
+        # 이미 폴더가 있으면 OLD로 이동
+        target_dir = Path(config.CURRENT_DIR)
+        old_setup_file_dir = Path(config.CONFIG_DIR, "Old_Setup_File")
+        old_dir_name = Path(old_setup_file_dir, f"Old_Setup_File-{datetime.datetime.now().strftime(util.time_util.TIME_FORMAT_4)}")
+        # REM Old_Setup_Fileの中に作るフォルダの名前が一意になるようにする
+        # Old_Setup_File 안에 만들 폴더의 이름이 고유하게 만들기
+
+        if target_dir.exists():
+            # REM 古いセットアップファイルを保持しておくためのフォルダを生成する
+            # 이전 설치 파일을 보관할 폴더 생성
+            os.makedirs(old_dir_name.absolute(), exist_ok=True)
+
+            original_target = target_dir.absolute()
+            target_dir.rename(os.path.join(old_dir_name, target_dir.name))
+            return f"move [{original_target} -> {os.path.join(old_dir_name, target_dir.name)}]"
+        else:
+            return None
+    except Exception as e:
+        print(e)
+
+
+def copy_source():
+    # copy python source
+    original_source = Path(config.ORIGINAL_SOURCE_DIR)
+    to_source = Path(config.CURRENT_DIR, original_source.name)
+    shutil.copytree(original_source.absolute(), to_source.absolute())
+
+
 if __name__ == '__main__':
 
-    log_path = Path(config.FILE_LOG_SETUP_CSV_PATH)
+    # 기존 폴더 백업
+    rtn_msg = check_folder_exist()
 
+    # 로그 경로 생성
+    log_path = Path(config.FILE_LOG_SETUP_CSV_PATH)
     if not log_path.parent.exists():
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
     logger = log.TimedLogger(config.PROC_NAME_SETUP_CSV, log.Setting(config.FILE_LOG_SETUP_CSV_PATH))
 
+    if rtn_msg is not None:
+        logger.info(rtn_msg)
+
     logger.info("--------------------START SETUP CSV--------------------")
     try:
+        # python 소스 복사
+        copy_source()
+        # 실행
         setup_csv()
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
