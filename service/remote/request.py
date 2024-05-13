@@ -56,7 +56,7 @@ def _request_multipart(url, header, file, timeout, twofactor):
             verify = twofactor["cacert"]
             cert = (twofactor["cert"], twofactor["key"])
             connect_read_timeout = (timeout, None)
-            res = requests.post(url, headers=header, files=file, timeout=connect_read_timeout, stream=True,
+            response = requests.post(url, headers=header, files=file, timeout=connect_read_timeout, stream=True,
                                 verify=verify, cert=cert)
         else:
             connect_read_timeout = (timeout, None)

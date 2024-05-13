@@ -24,7 +24,7 @@ loop_interval = int(get_ini_value(config.config_ini, "LIPLUS", "LIPLUS_UPLOAD_CY
 logger = log.TimedLogger(config.PROC_NAME_LIPLUS_UPLOAD, log.Setting(config.FILE_LOG_LIPLUS_UPLOAD_PATH))
 
 
-def SignalHandler(signum, frame):
+def signal_handler(signum, frame):
     signal_name_map = {getattr(signal, name): name for name in dir(signal) if name.startswith('SIG')}
     signal_name = signal_name_map.get(signum, f'Unknown signal ({signum})')
 
@@ -33,7 +33,7 @@ def SignalHandler(signum, frame):
 
 
 # \ADS\CollectRequestFileUpload\LoopScript\Upload_Loop.bat
-def liplus_upload_loop(pname, sname, pno: Union[int, None]):
+def liplus_upload_loop(pname, sname, pno: Union[int, None], is_test=False):
     while True:
         # check Exit Flag
         if exit_flag:
@@ -43,15 +43,20 @@ def liplus_upload_loop(pname, sname, pno: Union[int, None]):
         obj = CollectFileUpload(logger, pname, sname, pno)
         obj.start(logger)
 
-        # break
-        time.sleep(loop_interval)
+        if is_test:
+            break
+        else:
+            time.sleep(loop_interval)
 
 
 if __name__ == '__main__':
     # signal handler(sigint, sigterm)
-    signal.signal(signal.SIGINT, SignalHandler)
-    signal.signal(signal.SIGTERM, SignalHandler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-    # LIPLUS_ONDEMANDCOLLECTDOWNLOAD
+    # for test. loop runs only once
+    is_test = False
+
+    # LIPLUS_ONDEMANDCOLLECTDOWNLOAD(LIPLUS_UPLOAD)
     proc_name = config.PROC_NAME_LIPLUS_UPLOAD.split('_')
-    liplus_upload_loop(proc_name[0], proc_name[1], None)
+    liplus_upload_loop(proc_name[0], proc_name[1], None, is_test)
