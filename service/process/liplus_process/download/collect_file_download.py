@@ -304,7 +304,7 @@ class CollectFileDownload:
                             f.unlink(missing_ok=True)
                         except Exception as ex:
                             # SCP Transfer Fail
-                            self.logger.info(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed. {ex}")
+                            self.logger.error(f"[adslog] ERROR errorcode:3000 msg:SCP transfer of {f} failed. {ex}")
 
                         tick_scp_end = time.time() - tick_scp_start
                         self.logger.info(f"Transfer time to LiplusDB server:{tick_scp_end}[sec]")
@@ -316,7 +316,7 @@ class CollectFileDownload:
                     else:
                         # REM *** ZIPファイルの解凍失敗時はBackupフォルダへZIPファイルを移動する
                         # REM *** ZIP 파일의 압축을 풀지 못하면 Backup 폴더로 ZIP 파일을 이동합니다.
-                        self.logger.info(f"[{f}] :unzip failure")
+                        self.logger.warn(f"[{f}] :unzip failure")
                         self.logger.info(f"move [{f}] -> {self.zip_backup_folder}")
                         try:
                             # shutil.move(os.path.join(self.reg_folder.absolute(), f.name),
@@ -384,7 +384,7 @@ class CollectFileDownload:
         # NEXT処理をリトライしてもエラーの場合、エラーログを出力
         # NEXT 처리를 재 시도해도 오류가 발생하면 오류 로그 출력
         if download_ret != 0:
-            self.logger.info("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
+            self.logger.error("[adslog] ERROR errorcode:2001 msg:Failed to retry file deletion instruction to ESP.")
             # 失敗時のログ出力(ErroCode)
             # 실패시 로그 출력 (ErroCode)
             self._response_check(result_path.absolute(), is_error=True)
