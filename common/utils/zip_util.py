@@ -4,7 +4,7 @@ import time
 
 import common.decorators.common_deco as common
 
-
+# 압축파일 경로에 같은 이름폴더 아래에 압축해제.
 def unzip_r(file, dest):
     path = os.path.abspath(file)
     unzip_dest = os.path.join(dest, os.path.basename(file).replace('.zip', ''))
@@ -30,6 +30,8 @@ def unzip_r(file, dest):
 
 
 @common.check_process_time
+# dest에 그냥 압축해제(압축파일과 같은이름의 폴더 생성x)
+# dest None일시 압축파일과 같은경로에 같은이름의 폴더생성후 압축해제
 def unzip(logger, zip_file, dest=None):
     dest_dir = dest
     if dest_dir is None:

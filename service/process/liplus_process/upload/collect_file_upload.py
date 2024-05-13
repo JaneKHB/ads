@@ -56,6 +56,10 @@ class CollectFileUpload:
 
         self.upload_dir.mkdir(exist_ok=True)
 
+        if self.tool_df is None:
+            self.logger.warn("csv file is damaged.")
+            return
+
         for _, elem in self.tool_df.iterrows():
             # Mainが緊急終了状態 긴급 종료 상태
 

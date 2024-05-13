@@ -68,6 +68,10 @@ class CollectFileDownload:
         if not check_capacity(config.PROC_NAME_LIPLUS_DOWN):
             return
 
+        if self.tool_df is None:
+            self.logger.warn("csv file is damaged.")
+            return
+
         for _, elem in self.tool_df.iterrows():
             # rem --------------------------------------------------------------
             # rem  1:%%i : 接続先ESPアドレス (ESP Address)

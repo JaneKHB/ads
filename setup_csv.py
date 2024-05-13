@@ -119,6 +119,10 @@ def copy_csv(original_csv_path, base_dir):
         # shutil.copytree(os.path.join(copy_to_dir, "Original_Setup_File", "Capacity_Check"), copy_to_dir)
         # logger.info(f"copytree [{os.path.join(copy_to_dir, 'Original_Setup_File', 'Capacity_Check')}] -> [{copy_to_dir}]")
 
+    if not Path(original_csv_path).exists():
+        logger.warn(f"{original_csv_path} does not exist")
+        return
+
     # コマンドライン引数で受け取ったcsvを開く
     # 명령줄 인수로 받은 CSV 열기
     # '\n'포함 안함

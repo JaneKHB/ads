@@ -44,6 +44,10 @@ class LiplusFileTransfer:
         if not check_capacity(config.PROC_NAME_LIPLUS_TRANSFER):
             return
 
+        if self.tool_df is None:
+            self.logger.warn("csv file is damaged.")
+            return
+
         for _, elem in self.tool_df.iterrows():
             # 	rem	--------------------------------------------------------------
             # 	rem	設定ファイル「LiplusToolInfo.csv」から、

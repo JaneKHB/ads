@@ -64,6 +64,10 @@ class LiplusFileGet:
         if not check_capacity(config.PROC_NAME_LIPLUS_GET):
             return
 
+        if self.tool_df is None:
+            self.logger.warn("csv file is damaged.")
+            return
+
         for _, elem in self.tool_df.iterrows():
             # 	rem	設定ファイル「LiplusTool.csv」から、
             # 	rem	一行ずつ読み込んで、必要項目を取得する

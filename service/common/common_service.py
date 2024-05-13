@@ -190,10 +190,13 @@ def get_csv_info(module, type, pno=0):
 
     verification_csv()
 
-    skiprows = int(get_ini_value(config.config_ini, ini_section, ini_key))
-    tool_df = pd.read_csv(file_path, names=read_names, dtype=read_dttype,
-                          encoding='shift_jis',
-                          skiprows=skiprows, sep=',', index_col=False)
+    if Path(file_path).exists():
+        skiprows = int(get_ini_value(config.config_ini, ini_section, ini_key))
+        tool_df = pd.read_csv(file_path, names=read_names, dtype=read_dttype,
+                              encoding='shift_jis',
+                              skiprows=skiprows, sep=',', index_col=False)
+    else:
+        tool_df = None
     return tool_df
 
 def verification_csv():
